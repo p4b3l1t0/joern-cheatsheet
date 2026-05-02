@@ -22,6 +22,25 @@ Joern represents code as a Code Property Graph (CPG). A practical hunting workfl
 - [SQL Injection and XSS](docs/web-injection.md)
 - [Integer Overflow, Truncation, and Allocation Bugs](docs/integer-overflow.md)
 
+## Platform-Specific Guides
+
+- [Mobile Applications: Android, iOS, Cordova, and Flutter](docs/mobile-applications.md)
+- [Electron Applications](docs/electron-applications.md)
+
+## Language and Platform Coverage
+
+Joern works best when the target language has an official frontend. According to the official Joern documentation, strong or available coverage exists for C/C++, Java, JavaScript, JVM bytecode, Kotlin, Swift, PHP, Python, Go, Ruby, and C#.
+
+For mobile and desktop apps, this means:
+
+- Android Java/Kotlin code can be analyzed with Joern.
+- Android APKs may require bytecode conversion or JVM bytecode analysis before importing.
+- iOS Swift code can be analyzed with Joern.
+- Cordova JavaScript code can be analyzed with Joern, while `config.xml` should be reviewed with XML tooling.
+- Electron main/preload/renderer JavaScript can be analyzed with Joern.
+- Flutter Dart code is not covered by an official Joern frontend, but the Android and iOS native wrapper code can still be reviewed.
+- Objective-C is not listed as an official Joern frontend. C/C++ portions may be partially useful, but Objective-C-specific semantics should be reviewed with other tooling.
+
 ## Base Snippets
 
 ### Common Sources
