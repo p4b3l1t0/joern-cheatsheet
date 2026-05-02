@@ -22,6 +22,7 @@ Joern represents code as a Code Property Graph (CPG). A practical hunting workfl
 - [Directory Traversal, Filesystem, and Race Conditions](docs/filesystem-path-traversal.md)
 - [TLS, Certificates, and Insecure Network Traffic](docs/tls-network.md)
 - [SQL Injection and XSS](docs/web-injection.md)
+- [Web Application Vulnerabilities](docs/web-app-vulnerabilities.md)
 - [Integer Overflow, Truncation, and Allocation Bugs](docs/integer-overflow.md)
 
 ## Platform-Specific Guides
@@ -32,6 +33,8 @@ Joern represents code as a Code Property Graph (CPG). A practical hunting workfl
 ## Language and Platform Coverage
 
 Joern works best when the target language has an official frontend. According to the official Joern documentation, strong or available coverage exists for C/C++, Java, JavaScript, JVM bytecode, Kotlin, Swift, PHP, Python, Go, Ruby, and C#.
+
+Short disclaimer: these rules are Joern CPGQL hunting patterns for supported languages. Dart/Flutter app logic and Objective-C-specific semantics need extra tooling, although native wrappers and supported language components can still be reviewed.
 
 For mobile and desktop apps, this means:
 

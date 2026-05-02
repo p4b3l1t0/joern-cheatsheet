@@ -296,6 +296,21 @@
       padding-top: 24px;
     }
 
+    .support-note {
+      margin-top: 14px;
+      border: 1px solid rgba(139, 255, 207, 0.22);
+      background: rgba(139, 255, 207, 0.07);
+      border-radius: 18px;
+      padding: 14px 16px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .support-note strong {
+      color: var(--accent-2);
+    }
+
     .app-tile {
       border-radius: 20px;
       padding: 18px;
@@ -773,7 +788,7 @@
 </head>
 <body>
   <div class="top-actions">
-    <button class="lang-toggle" id="languageToggle" type="button" aria-label="Switch language">ES</button>
+    <button class="lang-toggle" id="languageToggle" type="button" aria-label="Switch language" title="Switch English / Spanish">EN / ES</button>
   </div>
 
   <header class="shell hero">
@@ -798,7 +813,7 @@
 
     <aside class="panel stats" aria-label="Cheatsheet summary">
       <div class="stat">
-        <strong id="techniqueCount">11</strong>
+        <strong id="techniqueCount">21</strong>
         <span data-i18n="techniqueGroups">Technique groups</span>
       </div>
       <div class="stat">
@@ -907,6 +922,11 @@
     </article>
   </section>
 
+  <section class="shell support-note" aria-label="Supported languages note">
+    <strong data-i18n="supportedTitle">Supported languages:</strong>
+    <span data-i18n="supportedText">The rules are written as Joern CPGQL patterns for Joern-compatible code: C/C++, Java, JavaScript, JVM bytecode, Kotlin, Swift, PHP, Python, Go, Ruby, and C#. Dart/Flutter app logic and Objective-C require extra tooling, but native wrappers can still be reviewed.</span>
+  </section>
+
   <main class="shell layout">
     <aside class="panel sidebar">
       <div id="navList"></div>
@@ -985,6 +1005,8 @@
         mobileText: "Android, iOS, Cordova and Flutter native wrappers: WebView, bridge APIs, storage, manifests and plist review.",
         electronTitle: "Electron apps",
         electronText: "Main, preload and renderer review: IPC, Node integration, filesystem access, command execution and updates.",
+        supportedTitle: "Supported languages:",
+        supportedText: "The rules are written as Joern CPGQL patterns for Joern-compatible code: C/C++, Java, JavaScript, JVM bytecode, Kotlin, Swift, PHP, Python, Go, Ruby, and C#. Dart/Flutter app logic and Objective-C require extra tooling, but native wrappers can still be reviewed.",
         emptyState: "No techniques matched your search.",
         footerText: "This page is a visual companion for the markdown guides in this repository. Matches are triage leads, not confirmed vulnerabilities. Always review sanitization, authorization, platform configuration, and runtime context before reporting.",
         huntingFlow: "Hunting Flow",
@@ -1033,6 +1055,8 @@
         mobileText: "Android, iOS, Cordova y wrappers nativos de Flutter: WebView, bridges, storage, manifests y plist.",
         electronTitle: "Apps Electron",
         electronText: "Revision de main, preload y renderer: IPC, Node integration, filesystem access, command execution y updates.",
+        supportedTitle: "Lenguajes soportados:",
+        supportedText: "Las reglas estan escritas como patrones CPGQL para codigo compatible con Joern: C/C++, Java, JavaScript, JVM bytecode, Kotlin, Swift, PHP, Python, Go, Ruby y C#. La logica Dart/Flutter y Objective-C requieren herramientas extra, pero los wrappers nativos igual se pueden revisar.",
         emptyState: "No hay tecnicas que coincidan con tu busqueda.",
         footerText: "Esta pagina acompana las guias Markdown del repositorio. Los matches son pistas de triage, no vulnerabilidades confirmadas. Revisa sanitizacion, autorizacion, configuracion de plataforma y contexto runtime antes de reportar.",
         huntingFlow: "Flujo de hunting",
@@ -1254,7 +1278,7 @@ sink.reachableByFlows(source).p`,
         title: "NoSQL Injection",
         category: "web",
         icon: "web",
-        doc: "docs/web-injection.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find request-controlled data reaching MongoDB, Mongoose, or document database query APIs.",
         tags: ["NoSQLi", "MongoDB", "Mongoose", "query"],
         steps: [
@@ -1277,7 +1301,7 @@ sink.reachableByFlows(source).p`,
         title: "Server-Side Request Forgery",
         category: "web",
         icon: "web",
-        doc: "docs/web-injection.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Trace attacker-controlled URLs into server-side HTTP clients, fetch helpers, and URL loading APIs.",
         tags: ["SSRF", "URL", "HTTP client", "metadata"],
         steps: [
@@ -1300,7 +1324,7 @@ sink.reachableByFlows(source).p`,
         title: "Open Redirect",
         category: "web",
         icon: "web",
-        doc: "docs/web-injection.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find user-controlled redirect targets in web frameworks and response helpers.",
         tags: ["redirect", "phishing", "OAuth", "returnUrl"],
         steps: [
@@ -1323,7 +1347,7 @@ sink.reachableByFlows(source).p`,
         title: "CSRF and State-Changing Routes",
         category: "web",
         icon: "shield",
-        doc: "docs/web-injection.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Identify state-changing handlers and check whether CSRF protections are present.",
         tags: ["CSRF", "forms", "cookies", "state change"],
         steps: [
@@ -1347,7 +1371,7 @@ sink.reachableByFlows(source).p`,
         title: "CORS Misconfiguration",
         category: "web",
         icon: "web",
-        doc: "docs/web-injection.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find permissive CORS settings, reflected origins, and credentialed cross-origin responses.",
         tags: ["CORS", "headers", "origin", "credentials"],
         steps: [
@@ -1370,7 +1394,7 @@ sink.reachableByFlows(source).p`,
         title: "File Upload Issues",
         category: "web",
         icon: "file",
-        doc: "docs/filesystem-path-traversal.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Trace uploaded file metadata and content into filesystem writes, parsers, or public paths.",
         tags: ["upload", "file write", "parsers", "RCE"],
         steps: [
@@ -1393,7 +1417,7 @@ sink.reachableByFlows(source).p`,
         title: "Server-Side Template Injection",
         category: "web",
         icon: "web",
-        doc: "docs/web-injection.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find user input reaching template rendering engines or dynamic template compilation.",
         tags: ["SSTI", "template", "render", "RCE"],
         steps: [
@@ -1416,7 +1440,7 @@ sink.reachableByFlows(source).p`,
         title: "IDOR and Broken Access Control",
         category: "web",
         icon: "shield",
-        doc: "docs/input-validation.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find user-controlled IDs reaching object lookup or update operations without nearby authorization checks.",
         tags: ["IDOR", "access control", "authorization", "object IDs"],
         steps: [
@@ -1439,7 +1463,7 @@ sink.reachableByFlows(source).p`,
         title: "JWT and Session Issues",
         category: "web",
         icon: "lock",
-        doc: "docs/tls-network.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find weak JWT verification, hardcoded secrets, unsafe cookie settings, and token leakage.",
         tags: ["JWT", "session", "cookies", "auth"],
         steps: [
@@ -1462,7 +1486,7 @@ sink.reachableByFlows(source).p`,
         title: "Unsafe Deserialization",
         category: "web",
         icon: "shield",
-        doc: "docs/input-validation.md",
+        doc: "docs/web-app-vulnerabilities.md",
         summary: "Find structured user input reaching deserialization, XML, YAML, pickle, or object mapping APIs.",
         tags: ["deserialization", "XML", "YAML", "pickle", "RCE"],
         steps: [
