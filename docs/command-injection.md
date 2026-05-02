@@ -6,7 +6,7 @@ Look for attacker-controlled data reaching functions that execute commands. Star
 
 ```scala
 cpg.call
-  .name("(?i)(system|popen|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
+  .name("(?i)(system|popen|wordexp|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
   .map(c => (c.method.fullName, c.lineNumber, c.code))
   .l
 ```
@@ -18,7 +18,7 @@ def source = cpg.method.name("main").parameter.name("argv") ++
   cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv|recvfrom)").argument
 
 def sink = cpg.call
-  .name("(?i)(system|popen|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
+  .name("(?i)(system|popen|wordexp|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
   .argument
 
 sink.reachableByFlows(source).p

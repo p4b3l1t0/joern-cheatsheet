@@ -1090,14 +1090,34 @@
           "Mark CLI, environment, network, and parser input as sources.",
           "Use reachableByFlows to confirm whether input reaches command arguments."
         ],
-        query: `def source = cpg.method.name("main").parameter.name("argv") ++
+        queries: [
+          {
+            title: "Data flow from common inputs to command execution sinks",
+            code: `def source = cpg.method.name("main").parameter.name("argv") ++
   cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv|recvfrom)").argument
 
 def sink = cpg.call
   .name("(?i)(system|popen|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
   .argument
 
-sink.reachableByFlows(source).p`,
+sink.reachableByFlows(source).p`
+          },
+          {
+            title: "system and popen with non-literal command strings",
+            code: `cpg.call
+  .name("(?i)(system|popen)")
+  .whereNot(_.argument(1).isLiteral)
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "Quick list of command execution and wordexp sinks",
+            code: `cpg.call
+  .name("(?i)(system|popen|wordexp|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is the command shell-based or direct execution?",
           "Is there a strict allowlist before the sink?",
@@ -1117,10 +1137,29 @@ sink.reachableByFlows(source).p`,
           "Trace user input to copy sinks.",
           "Compare allocation sizes with copy sizes."
         ],
-        query: `def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv)").argument
+        queries: [
+          {
+            title: "Data flow from input reads into unsafe copy sinks",
+            code: `def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv)").argument
 def sink = cpg.call.name("(?i)(strcpy|strcat|sprintf|memcpy|memmove)").argument
 
-sink.reachableByFlows(source).p`,
+sink.reachableByFlows(source).p`
+          },
+          {
+            title: "Format and scan family calls worth manual review",
+            code: `cpg.call
+  .name("(?i)(sprintf|snprintf|vsnprintf|vsprintf|scanf|sscanf|fscanf|vfprintf|fprintf)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "Classic unchecked string APIs still in the codebase",
+            code: `cpg.call
+  .name("(?i)(gets|strcpy|strcat|sprintf)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is the destination size known and enforced?",
           "Is null termination guaranteed?",
@@ -1140,7 +1179,10 @@ sink.reachableByFlows(source).p`,
           "Track identifiers after the free call.",
           "Review reassignment and aliasing manually."
         ],
-        query: `cpg.call.name("(?i)(free|.*_free|kfree)").where(_.argument(1).isIdentifier).filter { f =>
+        queries: [
+          {
+            title: "Double free heuristic on the same freed identifier",
+            code: `cpg.call.name("(?i)(free|.*_free|kfree)").where(_.argument(1).isIdentifier).filter { f =>
   val freed = f.argument(1).code
   f.method.ast.isCall
     .name("(?i)(free|.*_free|kfree)")
@@ -1148,7 +1190,23 @@ sink.reachableByFlows(source).p`,
     .argument(1)
     .codeExact(freed)
     .nonEmpty
-}.l`,
+}.l`
+          },
+          {
+            title: "All free-like calls for ownership triage",
+            code: `cpg.call
+  .name("(?i)(free|kfree|cfree|.*_destroy|.*_release)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "All realloc sites for manual lost-pointer review",
+            code: `cpg.call
+  .name("(?i)realloc")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is the pointer reassigned to NULL on every path?",
           "Are there aliases to the same memory?",
@@ -1168,12 +1226,31 @@ sink.reachableByFlows(source).p`,
           "Trace them to sensitive sinks.",
           "Use control-flow filters to prioritize unguarded flows."
         ],
-        query: `implicit val noResolve: NoResolve.type = NoResolve
+        queries: [
+          {
+            title: "Critical calls with unchecked return values",
+            code: `implicit val noResolve: NoResolve.type = NoResolve
 
 cpg.call
   .name("(?i)(read|recv|malloc|calloc|realloc|fopen|open)")
   .returnValueNotChecked
-  .l`,
+  .l`
+          },
+          {
+            title: "String-to-integer conversions used as size or index inputs",
+            code: `cpg.call
+  .name("(?i)(atoi|atol|atoll|strtol|strtoul|strtoll|strtoull)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "Signed comparison patterns on sizes or lengths",
+            code: `cpg.call
+  .code("(?i).*(<|>|<=|>=).*(strlen|size|len|count).*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is validation applied to the same value that reaches the sink?",
           "Does the error path stop execution?",
@@ -1193,11 +1270,31 @@ cpg.call
           "Find methods with allocations and no free-like calls.",
           "Review ownership transfer and error paths."
         ],
-        query: `cpg.method
+        queries: [
+          {
+            title: "Methods with heap allocation but no obvious free in the same method",
+            code: `cpg.method
   .where(_.ast.isCall.name("(?i)(malloc|calloc|realloc|strdup|strndup)"))
   .whereNot(_.ast.isCall.name("(?i)(free|.*_free)"))
   .map(m => (m.fullName, m.filename, m.lineNumber))
-  .l`,
+  .l`
+          },
+          {
+            title: "mmap without munmap in the same method body",
+            code: `cpg.method
+  .where(_.ast.isCall.name("(?i)mmap"))
+  .whereNot(_.ast.isCall.name("(?i)munmap"))
+  .map(m => (m.fullName, m.filename, m.lineNumber))
+  .l`
+          },
+          {
+            title: "strdup and strndup sites for ownership transfer review",
+            code: `cpg.call
+  .name("(?i)(strdup|strndup)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is memory ownership transferred to the caller?",
           "Does cleanup happen through goto labels or helpers?",
@@ -1217,10 +1314,29 @@ cpg.call
           "Trace input or string builders into path sinks.",
           "Review canonicalization and descriptor-based usage."
         ],
-        query: `def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|read|recv|recvfrom)").argument
+        queries: [
+          {
+            title: "Data flow from input into path-sensitive file operations",
+            code: `def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|read|recv|recvfrom)").argument
 def pathSink = cpg.call.name("(?i)(fopen|open|openat|stat|lstat|access|unlink|rename)").argument
 
-pathSink.reachableByFlows(source).p`,
+pathSink.reachableByFlows(source).p`
+          },
+          {
+            title: "Insecure temporary path helpers",
+            code: `cpg.call
+  .name("(?i)(mktemp|tmpnam|tempnam|tmpfile|mkstemp)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "Symlink and hardlink operations",
+            code: `cpg.call
+  .name("(?i)(symlink|link|rename|unlinkat|openat)")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is the path canonicalized before use?",
           "Is the base directory attacker-writable?",
@@ -1522,12 +1638,33 @@ sink.reachableByFlows(source).p`,
           "Find strlen results assigned to smaller integer types.",
           "Compare allocation and copy expressions."
         ],
-        query: `cpg.call
+        queries: [
+          {
+            title: "strlen assigned to a smaller signed integer type",
+            code: `cpg.call
   .name("(?i)strlen")
   .inAssignment
   .target
   .evalType("(g?)int")
-  .l`,
+  .l`
+          },
+          {
+            title: "Heap allocation size uses arithmetic expressions",
+            code: `cpg.call
+  .name("(?i)(malloc|calloc|realloc|alloca)")
+  .where(_.argument.arithmetic)
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "Left shift operations on signed-looking types",
+            code: `cpg.call
+  .nameExact(Operators.shiftLeft)
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .take(200)
+  .l`
+          }
+        ],
         checks: [
           "Can arithmetic wrap before allocation?",
           "Does the destination type keep the full range?",
@@ -1597,10 +1734,52 @@ androidSink.reachableByFlows(androidInput).p`
           "Trace renderer-controlled IPC input into privileged main process APIs.",
           "Review navigation, remote content, updates, and exposed preload APIs."
         ],
-        query: `cpg.call
-  .code("(?i).*(ipcMain\\\\.handle|ipcMain\\\\.on|ipcRenderer\\\\.invoke|ipcRenderer\\\\.send).*")
+        queries: [
+          {
+            title: "IPC handlers and IPC send or invoke sites",
+            code: `cpg.call
+  .code("(?i).*(ipcMain\\.handle|ipcMain\\.on|ipcRenderer\\.invoke|ipcRenderer\\.send).*")
   .map(c => (c.method.fullName, c.lineNumber, c.code))
-  .l`,
+  .l`
+          },
+          {
+            title: "BrowserWindow creation with risky webPreferences",
+            code: `cpg.call
+  .code("(?s).*new\\s+BrowserWindow\\s*\\(.*")
+  .where(_.code("(?s).*(nodeIntegration\\s*:\\s*true|contextIsolation\\s*:\\s*false|webSecurity\\s*:\\s*false|allowRunningInsecureContent\\s*:\\s*true|enableRemoteModule\\s*:\\s*true|sandbox\\s*:\\s*false).*"))
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "contextBridge exposeInMainWorld surfaces",
+            code: `cpg.call
+  .code("(?i).*contextBridge\\.exposeInMainWorld.*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "IPC handler arguments reaching process execution",
+            code: `def ipcSource = cpg.call.code("(?i).*(ipcMain\\.handle|ipcMain\\.on).*").argument
+def execSink = cpg.call.name("(?i)(exec|execFile|spawn|fork)").argument
+
+execSink.reachableByFlows(ipcSource).p`
+          },
+          {
+            title: "shell.openExternal with non-literal URL",
+            code: `cpg.call
+  .code("(?i).*shell\\.openExternal.*")
+  .whereNot(_.argument.isLiteral)
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          },
+          {
+            title: "Auto-updater and download-related APIs",
+            code: `cpg.call
+  .code("(?i).*(autoUpdater|downloadURL|setFeedURL|downloadFile|createWriteStream).*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`
+          }
+        ],
         checks: [
           "Is contextIsolation enabled and nodeIntegration disabled?",
           "Are IPC arguments validated and authorized?",
