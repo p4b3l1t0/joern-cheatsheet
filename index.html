@@ -1536,21 +1536,40 @@ sink.reachableByFlows(source).p`,
         icon: "mobile",
         doc: "docs/mobile-applications.md",
         summary: "Review Android, iOS, Cordova, and Flutter native layers with Joern where language support exists.",
-        tags: ["Android", "iOS", "Cordova", "Flutter"],
+        tags: ["Android", "iOS", "Cordova", "Flutter", "WebView", "storage", "bridge"],
         steps: [
-          "Use Joern for Java, Kotlin, Swift, JavaScript, JVM bytecode, and native C/C++.",
-          "Review XML, plist, manifests, entitlements, and Dart with other tooling.",
-          "Focus on WebView, bridge APIs, storage, logs, crypto, and platform config."
+          "Use Joern for Java, Kotlin, Swift, JavaScript, JVM bytecode, and native C/C++ mobile code.",
+          "Trace intent, deeplink, WebView, bridge, and Flutter MethodChannel input into sensitive sinks.",
+          "Review XML, plist, manifests, entitlements, and Dart with other tooling."
         ],
-        query: `cpg.call
+        query: `// Android WebView risky settings
+cpg.call
   .name("(?i)(setJavaScriptEnabled|setAllowFileAccess|setAllowContentAccess|setAllowFileAccessFromFileURLs|setAllowUniversalAccessFromFileURLs)")
   .where(_.argument.code("true"))
   .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l
+
+// Android intent/deeplink input into sensitive APIs
+def androidInput = cpg.call.name("(?i)(getIntent|getData|getDataString|getStringExtra|getExtras|getQueryParameter)").argument
+def androidSink = cpg.call.name("(?i)(loadUrl|openFileOutput|File|Uri.parse|startActivity|sendBroadcast|exec|Runtime.getRuntime)").argument
+androidSink.reachableByFlows(androidInput).p
+
+// Mobile logs with possible secrets
+cpg.call
+  .code("(?i).*(Log\\.(d|e|i|v|w|wtf)|print|NSLog).*")
+  .where(_.argument.code("(?i).*(token|secret|password|passwd|jwt|session|apiKey|apikey|credential).*"))
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l
+
+// Weak crypto, hardcoded crypto material, and TLS bypass hints
+cpg.call
+  .code("(?i).*(MD5|SHA1|DES|RC4|AES/ECB|SecretKeySpec|IvParameterSpec|TrustAll|HostnameVerifier|SSL_VERIFY_NONE|ALLOW_ALL_HOSTNAME_VERIFIER).*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
   .l`,
         checks: [
-          "Are Android exported components protected?",
-          "Are iOS ATS exceptions limited?",
-          "Do Cordova or Flutter bridges expose sensitive native actions?"
+          "Can untrusted intents, deeplinks, WebView content, or bridge calls reach native sinks?",
+          "Are secrets stored in platform-safe storage instead of logs, files, SharedPreferences, UserDefaults, or clipboard?",
+          "Are TLS validation, ATS exceptions, and certificate pinning configured safely?"
         ]
       },
       {
