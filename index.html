@@ -53,6 +53,28 @@
       margin: 0 auto;
     }
 
+    .top-actions {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 30;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .lang-toggle {
+      border: 1px solid rgba(101, 214, 255, 0.32);
+      background: rgba(7, 16, 29, 0.86);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 11px;
+      font-weight: 900;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    }
+
     .hero {
       padding: 48px 0 28px;
       display: grid;
@@ -148,6 +170,11 @@
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
       color: #06101c;
       border: 0;
+    }
+
+    .button.secondary {
+      border-color: rgba(255, 209, 102, 0.42);
+      background: rgba(255, 209, 102, 0.12);
     }
 
     .stats {
@@ -621,6 +648,80 @@
       color: var(--accent);
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(2, 7, 14, 0.74);
+      backdrop-filter: blur(12px);
+      z-index: 40;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(980px, 100%);
+      max-height: min(820px, calc(100vh - 40px));
+      overflow: auto;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(18, 35, 58, 0.98), rgba(7, 16, 29, 0.98));
+      border: 1px solid rgba(101, 214, 255, 0.28);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+      padding: 26px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      margin-bottom: 8px;
+    }
+
+    .close-button {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .guide-card {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.035);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .guide-card h3 {
+      margin: 0 0 10px;
+    }
+
+    .guide-card p {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 12px;
+    }
+
     @media (max-width: 980px) {
       .hero,
       .layout {
@@ -639,6 +740,10 @@
 
       .app-map {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .guide-grid {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -667,40 +772,103 @@
   </style>
 </head>
 <body>
+  <div class="top-actions">
+    <button class="lang-toggle" id="languageToggle" type="button" aria-label="Switch language">ES</button>
+  </div>
+
   <header class="shell hero">
     <section class="hero-card">
       <div class="eyebrow">
         <span aria-hidden="true">CPG</span>
-        <span>Joern Hunting Guide</span>
+        <span data-i18n="eyebrow">Joern Hunting Guide</span>
       </div>
-      <h1>Vulnerability techniques, organized for review.</h1>
-      <p>
+      <h1 data-i18n="heroTitle">Vulnerability techniques, organized for review.</h1>
+      <p data-i18n="heroText">
         Browse practical Joern CPGQL patterns for native code, web code, mobile wrappers,
         Cordova, Flutter native layers, and Electron applications. Start broad, confirm
         flows, and reduce false positives with context.
       </p>
       <div class="hero-actions">
-        <a class="button primary" href="#techniques">Explore techniques</a>
-        <a class="button" href="README.md">Open README</a>
-        <a class="button" href="https://docs.joern.io/" target="_blank" rel="noreferrer">Joern docs</a>
+        <a class="button primary" href="#techniques" data-i18n="exploreButton">Explore techniques</a>
+        <button class="button secondary" id="openGuideButton" type="button" data-i18n="joernGuideButton">How to use Joern</button>
+        <a class="button" href="README.md" data-i18n="readmeButton">Open README</a>
+        <a class="button" href="https://docs.joern.io/" target="_blank" rel="noreferrer" data-i18n="docsButton">Joern docs</a>
       </div>
     </section>
 
     <aside class="panel stats" aria-label="Cheatsheet summary">
       <div class="stat">
-        <strong>11</strong>
-        <span>Technique groups</span>
+        <strong id="techniqueCount">11</strong>
+        <span data-i18n="techniqueGroups">Technique groups</span>
       </div>
       <div class="stat">
         <strong>4</strong>
-        <span>Main review areas: source, sink, flow, context</span>
+        <span data-i18n="reviewAreas">Main review areas: source, sink, flow, context</span>
       </div>
       <div class="stat">
         <strong>Static</strong>
-        <span>Single HTML file ready for GitHub Pages</span>
+        <span data-i18n="staticPage">Single HTML file ready for GitHub Pages</span>
       </div>
     </aside>
   </header>
+
+  <div class="modal-backdrop" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <article class="modal">
+      <header class="modal-header">
+        <div>
+          <h2 id="guideTitle" data-i18n="guideTitle">How to use Joern locally</h2>
+          <p data-i18n="guideIntro">Install Joern, parse a local codebase into a CPG, open the shell, and run queries from this cheatsheet.</p>
+        </div>
+        <button class="close-button" id="closeGuideButton" type="button" data-i18n="closeButton">Close</button>
+      </header>
+      <div class="guide-grid">
+        <section class="guide-card">
+          <h3 data-i18n="installTitle">1. Install Joern</h3>
+          <p data-i18n="installText">Download Joern from the official project and make sure the CLI commands are in your PATH.</p>
+          <div class="code-block">
+            <div class="code-toolbar">
+              <span>Install check</span>
+              <button class="copy-button" type="button" data-copy="joern --version">Copy</button>
+            </div>
+            <pre><code>joern --version</code></pre>
+          </div>
+        </section>
+        <section class="guide-card">
+          <h3 data-i18n="parseTitle">2. Parse local code</h3>
+          <p data-i18n="parseText">Create a CPG from a source directory. Add a language when Joern cannot detect it automatically.</p>
+          <div class="code-block">
+            <div class="code-toolbar">
+              <span>Parse</span>
+              <button class="copy-button" type="button" data-copy="joern-parse ./target-app --output cpg.bin.zip">Copy</button>
+            </div>
+            <pre><code>joern-parse ./target-app --output cpg.bin.zip</code></pre>
+          </div>
+        </section>
+        <section class="guide-card">
+          <h3 data-i18n="openTitle">3. Open the CPG</h3>
+          <p data-i18n="openText">Start Joern with the generated CPG and run quick discovery queries.</p>
+          <div class="code-block">
+            <div class="code-toolbar">
+              <span>Open</span>
+              <button class="copy-button" type="button" data-copy="joern cpg.bin.zip">Copy</button>
+            </div>
+            <pre><code>joern cpg.bin.zip</code></pre>
+          </div>
+        </section>
+        <section class="guide-card">
+          <h3 data-i18n="runTitle">4. Run a first query</h3>
+          <p data-i18n="runText">Start with simple call searches, then move into source-to-sink data-flow.</p>
+          <div class="code-block">
+            <div class="code-toolbar">
+              <span>First query</span>
+              <button class="copy-button" type="button" data-copy='cpg.call.name("(?i)(system|popen|exec.*)").code.l'>Copy</button>
+            </div>
+            <pre><code>cpg.call.name("(?i)(system|popen|exec.*)").code.l</code></pre>
+          </div>
+        </section>
+      </div>
+    </article>
+  </div>
 
   <div class="toolbar" id="techniques">
     <div class="toolbar-inner">
@@ -708,34 +876,34 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M10.5 18a7.5 7.5 0 1 1 5.3-12.8A7.5 7.5 0 0 1 10.5 18Zm5.7-1.8 4.3 4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        <input id="search" type="search" placeholder="Search: mobile, WebView, IPC, SQL, memory, TLS...">
+        <input id="search" type="search" placeholder="Search: mobile, WebView, IPC, SQL, memory, TLS..." data-i18n-placeholder="searchPlaceholder">
       </label>
       <nav class="filters" aria-label="Technique filters">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="native">Native</button>
-        <button class="chip" data-filter="web">Web</button>
-        <button class="chip" data-filter="mobile">Mobile</button>
-        <button class="chip" data-filter="desktop">Desktop</button>
+        <button class="chip active" data-filter="all" data-i18n="filterAll">All</button>
+        <button class="chip" data-filter="native" data-i18n="filterNative">Native</button>
+        <button class="chip" data-filter="web" data-i18n="filterWeb">Web</button>
+        <button class="chip" data-filter="mobile" data-i18n="filterMobile">Mobile</button>
+        <button class="chip" data-filter="desktop" data-i18n="filterDesktop">Desktop</button>
       </nav>
     </div>
   </div>
 
   <section class="shell app-map" aria-label="Application type map">
     <article class="app-tile category-native">
-      <h2>Native code</h2>
-      <p>C/C++, Java, JVM bytecode and low-level bugs: memory corruption, UAF, integer issues, filesystem races.</p>
+      <h2 data-i18n="nativeTitle">Native code</h2>
+      <p data-i18n="nativeText">C/C++, Java, JVM bytecode and low-level bugs: memory corruption, UAF, integer issues, filesystem races.</p>
     </article>
     <article class="app-tile category-web">
-      <h2>Web services</h2>
-      <p>Java/JVM and web-facing flows: SQL injection, XSS, TLS mistakes, weak crypto and unsafe output.</p>
+      <h2 data-i18n="webTitle">Web services</h2>
+      <p data-i18n="webText">Java/JVM and web-facing flows: SQL injection, XSS, TLS mistakes, weak crypto and unsafe output.</p>
     </article>
     <article class="app-tile category-mobile">
-      <h2>Mobile apps</h2>
-      <p>Android, iOS, Cordova and Flutter native wrappers: WebView, bridge APIs, storage, manifests and plist review.</p>
+      <h2 data-i18n="mobileTitle">Mobile apps</h2>
+      <p data-i18n="mobileText">Android, iOS, Cordova and Flutter native wrappers: WebView, bridge APIs, storage, manifests and plist review.</p>
     </article>
     <article class="app-tile category-desktop">
-      <h2>Electron apps</h2>
-      <p>Main, preload and renderer review: IPC, Node integration, filesystem access, command execution and updates.</p>
+      <h2 data-i18n="electronTitle">Electron apps</h2>
+      <p data-i18n="electronText">Main, preload and renderer review: IPC, Node integration, filesystem access, command execution and updates.</p>
     </article>
   </section>
 
@@ -747,15 +915,15 @@
     <section>
       <div class="grid" id="cardGrid"></div>
       <article class="panel details" id="details"></article>
-      <div class="panel empty" id="emptyState">No techniques matched your search.</div>
+      <div class="panel empty" id="emptyState" data-i18n="emptyState">No techniques matched your search.</div>
     </section>
   </main>
 
   <footer class="shell footer">
     <p>
-      This page is a visual companion for the markdown guides in this repository.
+      <span data-i18n="footerText">This page is a visual companion for the markdown guides in this repository.
       Matches are triage leads, not confirmed vulnerabilities. Always review sanitization,
-      authorization, platform configuration, and runtime context before reporting.
+      authorization, platform configuration, and runtime context before reporting.</span>
     </p>
   </footer>
 
@@ -778,6 +946,105 @@
       integer: "M5 7h14M5 12h14M5 17h14M8 4v16m8-16v16",
       shield: "M12 3 5 6v6c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9V6z",
       copy: "M8 8h10v12H8zM6 16H4V4h10v2"
+    };
+
+    const translations = {
+      en: {
+        eyebrow: "Joern Hunting Guide",
+        heroTitle: "Vulnerability techniques, organized for review.",
+        heroText: "Browse practical Joern CPGQL patterns for native code, web code, mobile wrappers, Cordova, Flutter native layers, and Electron applications. Start broad, confirm flows, and reduce false positives with context.",
+        exploreButton: "Explore techniques",
+        joernGuideButton: "How to use Joern",
+        readmeButton: "Open README",
+        docsButton: "Joern docs",
+        techniqueGroups: "Technique groups",
+        reviewAreas: "Main review areas: source, sink, flow, context",
+        staticPage: "Single HTML file ready for GitHub Pages",
+        guideTitle: "How to use Joern locally",
+        guideIntro: "Install Joern, parse a local codebase into a CPG, open the shell, and run queries from this cheatsheet.",
+        closeButton: "Close",
+        installTitle: "1. Install Joern",
+        installText: "Download Joern from the official project and make sure the CLI commands are in your PATH.",
+        parseTitle: "2. Parse local code",
+        parseText: "Create a CPG from a source directory. Add a language when Joern cannot detect it automatically.",
+        openTitle: "3. Open the CPG",
+        openText: "Start Joern with the generated CPG and run quick discovery queries.",
+        runTitle: "4. Run a first query",
+        runText: "Start with simple call searches, then move into source-to-sink data-flow.",
+        searchPlaceholder: "Search: mobile, WebView, IPC, SQL, memory, TLS...",
+        filterAll: "All",
+        filterNative: "Native",
+        filterWeb: "Web",
+        filterMobile: "Mobile",
+        filterDesktop: "Desktop",
+        nativeTitle: "Native code",
+        nativeText: "C/C++, Java, JVM bytecode and low-level bugs: memory corruption, UAF, integer issues, filesystem races.",
+        webTitle: "Web services",
+        webText: "Java/JVM and web-facing flows: SQL injection, XSS, TLS mistakes, weak crypto and unsafe output.",
+        mobileTitle: "Mobile apps",
+        mobileText: "Android, iOS, Cordova and Flutter native wrappers: WebView, bridge APIs, storage, manifests and plist review.",
+        electronTitle: "Electron apps",
+        electronText: "Main, preload and renderer review: IPC, Node integration, filesystem access, command execution and updates.",
+        emptyState: "No techniques matched your search.",
+        footerText: "This page is a visual companion for the markdown guides in this repository. Matches are triage leads, not confirmed vulnerabilities. Always review sanitization, authorization, platform configuration, and runtime context before reporting.",
+        huntingFlow: "Hunting Flow",
+        starterQuery: "Starter Query",
+        cpgqlStarter: "CPGQL starter query",
+        manualChecklist: "Manual Review Checklist",
+        openMarkdown: "Open markdown guide",
+        copyQuery: "Copy query",
+        copied: "Copied",
+        selectText: "Select text",
+        appReview: "app review"
+      },
+      es: {
+        eyebrow: "Guia de hunting con Joern",
+        heroTitle: "Tecnicas de vulnerabilidades, ordenadas para revisar.",
+        heroText: "Explora patrones CPGQL de Joern para codigo nativo, web, mobile wrappers, Cordova, capas nativas de Flutter y aplicaciones Electron. Empieza amplio, confirma flows y reduce falsos positivos con contexto.",
+        exploreButton: "Explorar tecnicas",
+        joernGuideButton: "Como usar Joern",
+        readmeButton: "Abrir README",
+        docsButton: "Docs de Joern",
+        techniqueGroups: "Grupos de tecnicas",
+        reviewAreas: "Areas principales: source, sink, flow, contexto",
+        staticPage: "HTML estatico listo para GitHub Pages",
+        guideTitle: "Como usar Joern localmente",
+        guideIntro: "Instala Joern, parsea un codigo local como CPG, abre la shell y ejecuta queries de esta cheatsheet.",
+        closeButton: "Cerrar",
+        installTitle: "1. Instalar Joern",
+        installText: "Descarga Joern desde el proyecto oficial y verifica que los comandos CLI esten en tu PATH.",
+        parseTitle: "2. Parsear codigo local",
+        parseText: "Crea un CPG desde una carpeta de codigo. Agrega el lenguaje si Joern no lo detecta automaticamente.",
+        openTitle: "3. Abrir el CPG",
+        openText: "Inicia Joern con el CPG generado y ejecuta queries rapidas de descubrimiento.",
+        runTitle: "4. Ejecutar una primera query",
+        runText: "Empieza con busquedas simples de llamadas y despues avanza a data-flow source-to-sink.",
+        searchPlaceholder: "Buscar: mobile, WebView, IPC, SQL, memory, TLS...",
+        filterAll: "Todo",
+        filterNative: "Nativo",
+        filterWeb: "Web",
+        filterMobile: "Mobile",
+        filterDesktop: "Desktop",
+        nativeTitle: "Codigo nativo",
+        nativeText: "C/C++, Java, JVM bytecode y bugs low-level: memory corruption, UAF, integers y filesystem races.",
+        webTitle: "Servicios web",
+        webText: "Flows Java/JVM y web-facing: SQL injection, XSS, errores TLS, crypto debil y output inseguro.",
+        mobileTitle: "Apps mobile",
+        mobileText: "Android, iOS, Cordova y wrappers nativos de Flutter: WebView, bridges, storage, manifests y plist.",
+        electronTitle: "Apps Electron",
+        electronText: "Revision de main, preload y renderer: IPC, Node integration, filesystem access, command execution y updates.",
+        emptyState: "No hay tecnicas que coincidan con tu busqueda.",
+        footerText: "Esta pagina acompana las guias Markdown del repositorio. Los matches son pistas de triage, no vulnerabilidades confirmadas. Revisa sanitizacion, autorizacion, configuracion de plataforma y contexto runtime antes de reportar.",
+        huntingFlow: "Flujo de hunting",
+        starterQuery: "Query inicial",
+        cpgqlStarter: "Query CPGQL inicial",
+        manualChecklist: "Checklist manual",
+        openMarkdown: "Abrir guia Markdown",
+        copyQuery: "Copiar query",
+        copied: "Copiado",
+        selectText: "Seleccionar texto",
+        appReview: "app review"
+      }
     };
 
     const techniques = [
@@ -983,6 +1250,237 @@ sink.reachableByFlows(source).p`,
         ]
       },
       {
+        id: "nosql-injection",
+        title: "NoSQL Injection",
+        category: "web",
+        icon: "web",
+        doc: "docs/web-injection.md",
+        summary: "Find request-controlled data reaching MongoDB, Mongoose, or document database query APIs.",
+        tags: ["NoSQLi", "MongoDB", "Mongoose", "query"],
+        steps: [
+          "Identify request body, query, params, and JSON parsing sources.",
+          "Trace data into find, findOne, aggregate, update, and raw query APIs.",
+          "Review whether operators such as $ne, $gt, $regex, or $where can be injected."
+        ],
+        query: `def source = cpg.call.name("(?i)(body|query|param|params|getParameter|JSON.parse)").argument
+def sink = cpg.call.name("(?i)(find|findOne|findById|aggregate|updateOne|updateMany|deleteOne|where)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Can user input control object keys or NoSQL operators?",
+          "Are query objects built from allowlisted fields only?",
+          "Are regex and $where expressions blocked or sanitized?"
+        ]
+      },
+      {
+        id: "ssrf",
+        title: "Server-Side Request Forgery",
+        category: "web",
+        icon: "web",
+        doc: "docs/web-injection.md",
+        summary: "Trace attacker-controlled URLs into server-side HTTP clients, fetch helpers, and URL loading APIs.",
+        tags: ["SSRF", "URL", "HTTP client", "metadata"],
+        steps: [
+          "Mark URL, host, path, webhook, callback, and image-fetch parameters as sources.",
+          "Trace them into HTTP clients such as fetch, axios, request, URL, OkHttp, or HttpClient.",
+          "Check whether redirects, DNS rebinding, private IPs, and cloud metadata endpoints are blocked."
+        ],
+        query: `def source = cpg.call.name("(?i)(getParameter|param|query|body|getHeader)").argument
+def sink = cpg.call.name("(?i)(fetch|axios|get|post|request|openConnection|HttpClient|OkHttpClient|URL)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Is the destination host allowlisted after parsing and redirects?",
+          "Are private IP ranges and metadata endpoints blocked?",
+          "Can DNS rebinding or alternate IP notation bypass validation?"
+        ]
+      },
+      {
+        id: "open-redirect",
+        title: "Open Redirect",
+        category: "web",
+        icon: "web",
+        doc: "docs/web-injection.md",
+        summary: "Find user-controlled redirect targets in web frameworks and response helpers.",
+        tags: ["redirect", "phishing", "OAuth", "returnUrl"],
+        steps: [
+          "Search for redirect helper calls.",
+          "Trace request parameters such as next, url, redirect, returnUrl, and callback.",
+          "Review whether redirects are relative or validated against an allowlist."
+        ],
+        query: `def source = cpg.call.name("(?i)(getParameter|param|query|body)").argument
+def sink = cpg.call.name("(?i)(redirect|sendRedirect|setHeader|location|redirectTo)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Is the redirect target restricted to trusted hosts?",
+          "Are protocol-relative URLs like //evil.com blocked?",
+          "Can CRLF inject a Location header?"
+        ]
+      },
+      {
+        id: "csrf",
+        title: "CSRF and State-Changing Routes",
+        category: "web",
+        icon: "shield",
+        doc: "docs/web-injection.md",
+        summary: "Identify state-changing handlers and check whether CSRF protections are present.",
+        tags: ["CSRF", "forms", "cookies", "state change"],
+        steps: [
+          "Find POST, PUT, PATCH, and DELETE route handlers.",
+          "Look for writes to database, session, files, or privileged actions.",
+          "Check whether CSRF tokens, SameSite cookies, or origin checks are enforced."
+        ],
+        query: `cpg.call
+  .code("(?i).*(post|put|patch|delete|router\\.|app\\.).*")
+  .where(_.method.ast.isCall.name("(?i)(save|update|delete|insert|create|write|transfer|changePassword)"))
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`,
+        checks: [
+          "Does the route change server-side state?",
+          "Is CSRF protection enforced for cookie-authenticated users?",
+          "Are Origin or Referer checks used safely when tokens are absent?"
+        ]
+      },
+      {
+        id: "cors",
+        title: "CORS Misconfiguration",
+        category: "web",
+        icon: "web",
+        doc: "docs/web-injection.md",
+        summary: "Find permissive CORS settings, reflected origins, and credentialed cross-origin responses.",
+        tags: ["CORS", "headers", "origin", "credentials"],
+        steps: [
+          "Search for Access-Control-Allow-Origin and CORS middleware configuration.",
+          "Check if Origin is reflected into response headers.",
+          "Flag wildcard origins combined with credentials or sensitive endpoints."
+        ],
+        query: `cpg.call
+  .code("(?i).*(Access-Control-Allow-Origin|cors\\(|allowedOrigins|allowCredentials|Access-Control-Allow-Credentials).*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`,
+        checks: [
+          "Is the Origin header reflected without an allowlist?",
+          "Are credentials allowed with broad origins?",
+          "Do sensitive API routes share the same CORS policy?"
+        ]
+      },
+      {
+        id: "file-upload",
+        title: "File Upload Issues",
+        category: "web",
+        icon: "file",
+        doc: "docs/filesystem-path-traversal.md",
+        summary: "Trace uploaded file metadata and content into filesystem writes, parsers, or public paths.",
+        tags: ["upload", "file write", "parsers", "RCE"],
+        steps: [
+          "Find multipart, upload, filename, and file buffer sources.",
+          "Trace filenames into filesystem writes and extraction routines.",
+          "Review content-type checks, extension allowlists, storage paths, and parser usage."
+        ],
+        query: `def source = cpg.call.name("(?i)(file|files|multipart|filename|originalname|buffer|stream)").argument
+def sink = cpg.call.name("(?i)(writeFile|writeFileSync|createWriteStream|move|mv|copyFile|unzip|extract)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Is the stored filename generated server-side?",
+          "Are extensions and content inspected with an allowlist?",
+          "Can uploaded files be served or executed by the web server?"
+        ]
+      },
+      {
+        id: "ssti",
+        title: "Server-Side Template Injection",
+        category: "web",
+        icon: "web",
+        doc: "docs/web-injection.md",
+        summary: "Find user input reaching template rendering engines or dynamic template compilation.",
+        tags: ["SSTI", "template", "render", "RCE"],
+        steps: [
+          "Find render, compile, parse, and template APIs.",
+          "Trace request data into template names or template strings.",
+          "Check if user input controls the template source rather than only template variables."
+        ],
+        query: `def source = cpg.call.name("(?i)(getParameter|param|query|body|getHeader)").argument
+def sink = cpg.call.name("(?i)(render|renderString|compile|template|parse|processTemplate)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Can users control template source or template path?",
+          "Is sandboxing enabled and escape behavior understood?",
+          "Are dangerous helpers or filters exposed?"
+        ]
+      },
+      {
+        id: "idor",
+        title: "IDOR and Broken Access Control",
+        category: "web",
+        icon: "shield",
+        doc: "docs/input-validation.md",
+        summary: "Find user-controlled IDs reaching object lookup or update operations without nearby authorization checks.",
+        tags: ["IDOR", "access control", "authorization", "object IDs"],
+        steps: [
+          "Trace id-like request parameters into database lookups and updates.",
+          "Check whether ownership or authorization is enforced in the same flow.",
+          "Prioritize update, delete, download, export, and admin actions."
+        ],
+        query: `def source = cpg.call.name("(?i)(param|params|getParameter|query|body)").argument.code("(?i).*(id|user|account|org|tenant).*")
+def sink = cpg.call.name("(?i)(findById|findOne|getById|update|delete|download|export)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Is the object scoped to the authenticated user or tenant?",
+          "Is authorization checked after object lookup and before use?",
+          "Can users change IDs in path, query, body, or headers?"
+        ]
+      },
+      {
+        id: "jwt-session",
+        title: "JWT and Session Issues",
+        category: "web",
+        icon: "lock",
+        doc: "docs/tls-network.md",
+        summary: "Find weak JWT verification, hardcoded secrets, unsafe cookie settings, and token leakage.",
+        tags: ["JWT", "session", "cookies", "auth"],
+        steps: [
+          "Search for token signing and verification APIs.",
+          "Look for hardcoded secrets, disabled verification, or weak algorithms.",
+          "Review cookie flags and token storage locations."
+        ],
+        query: `cpg.call
+  .code("(?i).*(jwt|jsonwebtoken|sign\\(|verify\\(|decode\\(|setCookie|cookie|SameSite|httpOnly|secure).*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`,
+        checks: [
+          "Are tokens verified, not only decoded?",
+          "Are secrets loaded from secure configuration?",
+          "Do cookies use HttpOnly, Secure, and SameSite where appropriate?"
+        ]
+      },
+      {
+        id: "deserialization",
+        title: "Unsafe Deserialization",
+        category: "web",
+        icon: "shield",
+        doc: "docs/input-validation.md",
+        summary: "Find structured user input reaching deserialization, XML, YAML, pickle, or object mapping APIs.",
+        tags: ["deserialization", "XML", "YAML", "pickle", "RCE"],
+        steps: [
+          "Find parsers and deserializers for JSON, XML, YAML, pickle, Java serialization, and object mappers.",
+          "Trace request body, uploaded files, and message queue payloads into those parsers.",
+          "Check type binding, gadget exposure, external entities, and parser hardening."
+        ],
+        query: `def source = cpg.call.name("(?i)(body|read|readFile|upload|message|getInputStream)").argument
+def sink = cpg.call.name("(?i)(deserialize|readObject|ObjectInputStream|pickle|load|loadAll|fromXML|readValue|parse)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Can attacker-controlled bytes reach an object deserializer?",
+          "Are allowed types restricted?",
+          "Are XML external entities and unsafe YAML loaders disabled?"
+        ]
+      },
+      {
         id: "integer",
         title: "Integer Overflow and Truncation",
         category: "native",
@@ -1067,7 +1565,13 @@ sink.reachableByFlows(source).p`,
     const details = document.getElementById("details");
     const emptyState = document.getElementById("emptyState");
     const searchInput = document.getElementById("search");
+    const techniqueCount = document.getElementById("techniqueCount");
+    const languageToggle = document.getElementById("languageToggle");
+    const guideModal = document.getElementById("guideModal");
+    const openGuideButton = document.getElementById("openGuideButton");
+    const closeGuideButton = document.getElementById("closeGuideButton");
     const filterButtons = Array.from(document.querySelectorAll(".chip"));
+    let currentLanguage = "en";
 
     function iconSvg(name) {
       const path = icons[name] || icons.shield;
@@ -1081,12 +1585,38 @@ sink.reachableByFlows(source).p`,
 
     function categoryLabel(category) {
       const labels = {
-        native: "Native",
-        web: "Web",
-        mobile: "Mobile",
-        desktop: "Desktop"
+        en: {
+          native: "Native",
+          web: "Web",
+          mobile: "Mobile",
+          desktop: "Desktop"
+        },
+        es: {
+          native: "Nativo",
+          web: "Web",
+          mobile: "Mobile",
+          desktop: "Desktop"
+        }
       };
-      return labels[category] || "General";
+      return labels[currentLanguage][category] || "General";
+    }
+
+    function t(key) {
+      return translations[currentLanguage][key] || translations.en[key] || key;
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLanguage;
+      languageToggle.textContent = currentLanguage === "en" ? "ES" : "EN";
+      document.querySelectorAll("[data-i18n]").forEach(element => {
+        element.textContent = t(element.dataset.i18n);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(element => {
+        element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+      });
+      document.querySelectorAll("[data-copy]").forEach(button => {
+        button.textContent = t("copyQuery").replace(" query", "");
+      });
     }
 
     function matches(tech) {
@@ -1152,29 +1682,29 @@ sink.reachableByFlows(source).p`,
               ${iconSvg(tech.icon)}
               <div>
                 <h2>${tech.title}</h2>
-                <span class="category-pill">${categoryLabel(tech.category)} app review</span>
+                <span class="category-pill">${categoryLabel(tech.category)} ${t("appReview")}</span>
               </div>
             </div>
             <p style="margin-top: 14px;">${tech.summary}</p>
           </div>
-          <a class="button" href="${tech.doc}">Open markdown guide</a>
+          <a class="button" href="${tech.doc}">${t("openMarkdown")}</a>
         </header>
 
         <section class="section">
-          <h3>${iconSvg("flow")}Hunting Flow</h3>
+          <h3>${iconSvg("flow")}${t("huntingFlow")}</h3>
           <ol class="steps">
             ${tech.steps.map(step => `<li>${step}</li>`).join("")}
           </ol>
         </section>
 
         <section class="section">
-          <h3>${iconSvg("command")}Starter Query</h3>
+          <h3>${iconSvg("command")}${t("starterQuery")}</h3>
           <div class="code-block">
             <div class="code-toolbar">
-              <span>CPGQL starter query</span>
+              <span>${t("cpgqlStarter")}</span>
               <button class="copy-button" id="copyQueryButton" type="button">
                 ${inlineIcon("copy")}
-                <span>Copy query</span>
+                <span>${t("copyQuery")}</span>
               </button>
             </div>
             <pre><code>${escapeHtml(tech.query)}</code></pre>
@@ -1182,7 +1712,7 @@ sink.reachableByFlows(source).p`,
         </section>
 
         <section class="section">
-          <h3>${iconSvg("shield")}Manual Review Checklist</h3>
+          <h3>${iconSvg("shield")}${t("manualChecklist")}</h3>
           <ul class="checks">
             ${tech.checks.map(check => `<li>${check}</li>`).join("")}
           </ul>
@@ -1199,9 +1729,9 @@ sink.reachableByFlows(source).p`,
         const original = button.innerHTML;
         try {
           await copyText(query);
-          button.innerHTML = `${inlineIcon("shield")}<span>Copied</span>`;
+          button.innerHTML = `${inlineIcon("shield")}<span>${t("copied")}</span>`;
         } catch (error) {
-          button.innerHTML = `${inlineIcon("copy")}<span>Select text</span>`;
+          button.innerHTML = `${inlineIcon("copy")}<span>${t("selectText")}</span>`;
         }
         window.setTimeout(() => {
           button.innerHTML = original;
@@ -1237,6 +1767,7 @@ sink.reachableByFlows(source).p`,
     }
 
     function render() {
+      techniqueCount.textContent = techniques.length;
       const items = filteredTechniques();
       if (!items.some(item => item.id === state.selected) && items.length > 0) {
         state.selected = items[0].id;
@@ -1256,6 +1787,23 @@ sink.reachableByFlows(source).p`,
       }
     }
 
+    function bindStaticCopyButtons() {
+      document.querySelectorAll("[data-copy]").forEach(button => {
+        button.addEventListener("click", async () => {
+          const original = button.textContent;
+          try {
+            await copyText(button.dataset.copy);
+            button.textContent = t("copied");
+          } catch (error) {
+            button.textContent = t("selectText");
+          }
+          window.setTimeout(() => {
+            button.textContent = original;
+          }, 1400);
+        });
+      });
+    }
+
     searchInput.addEventListener("input", event => {
       state.query = event.target.value.trim();
       render();
@@ -1269,6 +1817,28 @@ sink.reachableByFlows(source).p`,
       });
     });
 
+    languageToggle.addEventListener("click", () => {
+      currentLanguage = currentLanguage === "en" ? "es" : "en";
+      applyLanguage();
+      render();
+    });
+
+    openGuideButton.addEventListener("click", () => {
+      guideModal.classList.add("open");
+    });
+
+    closeGuideButton.addEventListener("click", () => {
+      guideModal.classList.remove("open");
+    });
+
+    guideModal.addEventListener("click", event => {
+      if (event.target === guideModal) {
+        guideModal.classList.remove("open");
+      }
+    });
+
+    bindStaticCopyButtons();
+    applyLanguage();
     render();
   </script>
 </body>
