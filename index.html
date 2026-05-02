@@ -595,6 +595,11 @@
       overflow: hidden;
     }
 
+    .query-stack {
+      display: grid;
+      gap: 14px;
+    }
+
     .code-toolbar {
       display: flex;
       justify-content: space-between;
@@ -1542,30 +1547,37 @@ sink.reachableByFlows(source).p`,
           "Trace intent, deeplink, WebView, bridge, and Flutter MethodChannel input into sensitive sinks.",
           "Review XML, plist, manifests, entitlements, and Dart with other tooling."
         ],
-        query: `// Android WebView risky settings
-cpg.call
+        queries: [
+          {
+            title: "Android WebView risky settings",
+            code: `cpg.call
   .name("(?i)(setJavaScriptEnabled|setAllowFileAccess|setAllowContentAccess|setAllowFileAccessFromFileURLs|setAllowUniversalAccessFromFileURLs)")
   .where(_.argument.code("true"))
   .map(c => (c.method.fullName, c.lineNumber, c.code))
-  .l
-
-// Android intent/deeplink input into sensitive APIs
-def androidInput = cpg.call.name("(?i)(getIntent|getData|getDataString|getStringExtra|getExtras|getQueryParameter)").argument
+  .l`
+          },
+          {
+            title: "Android intent and deeplink input into sensitive APIs",
+            code: `def androidInput = cpg.call.name("(?i)(getIntent|getData|getDataString|getStringExtra|getExtras|getQueryParameter)").argument
 def androidSink = cpg.call.name("(?i)(loadUrl|openFileOutput|File|Uri.parse|startActivity|sendBroadcast|exec|Runtime.getRuntime)").argument
-androidSink.reachableByFlows(androidInput).p
-
-// Mobile logs with possible secrets
-cpg.call
+androidSink.reachableByFlows(androidInput).p`
+          },
+          {
+            title: "Mobile logs with possible secrets",
+            code: `cpg.call
   .code("(?i).*(Log\\.(d|e|i|v|w|wtf)|print|NSLog).*")
   .where(_.argument.code("(?i).*(token|secret|password|passwd|jwt|session|apiKey|apikey|credential).*"))
   .map(c => (c.method.fullName, c.lineNumber, c.code))
-  .l
-
-// Weak crypto, hardcoded crypto material, and TLS bypass hints
-cpg.call
+  .l`
+          },
+          {
+            title: "Weak crypto, hardcoded crypto material, and TLS bypass hints",
+            code: `cpg.call
   .code("(?i).*(MD5|SHA1|DES|RC4|AES/ECB|SecretKeySpec|IvParameterSpec|TrustAll|HostnameVerifier|SSL_VERIFY_NONE|ALLOW_ALL_HOSTNAME_VERIFIER).*")
   .map(c => (c.method.fullName, c.lineNumber, c.code))
-  .l`,
+  .l`
+          }
+        ],
         checks: [
           "Can untrusted intents, deeplinks, WebView content, or bridge calls reach native sinks?",
           "Are secrets stored in platform-safe storage instead of logs, files, SharedPreferences, UserDefaults, or clipboard?",
@@ -1717,6 +1729,8 @@ cpg.call
     }
 
     function renderDetails(tech) {
+      const queryBlocks = (tech.queries || [{ title: t("cpgqlStarter"), code: tech.query }])
+        .filter(block => block.code);
       details.className = `panel details category-${tech.category}`;
       details.innerHTML = `
         <header class="details-header">
@@ -1742,15 +1756,19 @@ cpg.call
 
         <section class="section">
           <h3>${iconSvg("command")}${t("starterQuery")}</h3>
-          <div class="code-block">
-            <div class="code-toolbar">
-              <span>${t("cpgqlStarter")}</span>
-              <button class="copy-button" id="copyQueryButton" type="button">
-                ${inlineIcon("copy")}
-                <span>${t("copyQuery")}</span>
-              </button>
-            </div>
-            <pre><code>${escapeHtml(tech.query)}</code></pre>
+          <div class="query-stack">
+            ${queryBlocks.map((block, index) => `
+              <div class="code-block">
+                <div class="code-toolbar">
+                  <span>${escapeHtml(block.title)}</span>
+                  <button class="copy-button copy-query-button" type="button" data-query-index="${index}">
+                    ${inlineIcon("copy")}
+                    <span>${t("copyQuery")}</span>
+                  </button>
+                </div>
+                <pre><code>${escapeHtml(block.code)}</code></pre>
+              </div>
+            `).join("")}
           </div>
         </section>
 
@@ -1761,24 +1779,24 @@ cpg.call
           </ul>
         </section>
       `;
-      bindCopyButton(tech.query);
+      bindCopyButtons(queryBlocks);
     }
 
-    function bindCopyButton(query) {
-      const button = document.getElementById("copyQueryButton");
-      if (!button) return;
-
-      button.addEventListener("click", async () => {
-        const original = button.innerHTML;
-        try {
-          await copyText(query);
-          button.innerHTML = `${inlineIcon("shield")}<span>${t("copied")}</span>`;
-        } catch (error) {
-          button.innerHTML = `${inlineIcon("copy")}<span>${t("selectText")}</span>`;
-        }
-        window.setTimeout(() => {
-          button.innerHTML = original;
-        }, 1400);
+    function bindCopyButtons(queryBlocks) {
+      details.querySelectorAll(".copy-query-button").forEach(button => {
+        button.addEventListener("click", async () => {
+          const original = button.innerHTML;
+          const block = queryBlocks[Number(button.dataset.queryIndex)];
+          try {
+            await copyText(block.code);
+            button.innerHTML = `${inlineIcon("shield")}<span>${t("copied")}</span>`;
+          } catch (error) {
+            button.innerHTML = `${inlineIcon("copy")}<span>${t("selectText")}</span>`;
+          }
+          window.setTimeout(() => {
+            button.innerHTML = original;
+          }, 1400);
+        });
       });
     }
 
