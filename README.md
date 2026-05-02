@@ -2,6 +2,8 @@
 
 This repository collects Joern queries for bug hunting and source code review. The goal is to start with simple patterns, define clear sources and sinks, and then reduce false positives with data-flow, control-flow, and context filters.
 
+An interactive static UI is available in [index.html](index.html). It is designed to be published directly with GitHub Pages.
+
 Joern represents code as a Code Property Graph (CPG). A practical hunting workflow is:
 
 1. Find dangerous calls or suspicious patterns.

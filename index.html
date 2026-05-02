@@ -1,0 +1,1275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Joern Vulnerability Hunting Cheatsheet</title>
+  <meta name="description" content="Interactive Joern vulnerability hunting cheatsheet with CPGQL techniques for web, native, mobile, and Electron apps.">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111f;
+      --bg-soft: #0e1b2f;
+      --panel: #12233a;
+      --panel-strong: #172b46;
+      --line: #263b59;
+      --text: #e6edf7;
+      --muted: #9eb0c8;
+      --accent: #65d6ff;
+      --accent-2: #8bffcf;
+      --warn: #ffd166;
+      --danger: #ff7b9c;
+      --native: #65d6ff;
+      --web: #c792ea;
+      --mobile: #8bffcf;
+      --desktop: #ffd166;
+      --code: #07101d;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+      --radius: 22px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(101, 214, 255, 0.18), transparent 28rem),
+        radial-gradient(circle at 85% 0%, rgba(139, 255, 207, 0.13), transparent 26rem),
+        linear-gradient(180deg, #08111f 0%, #0b1424 42%, #08111f 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 48px 0 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .hero-card,
+    .panel {
+      background: linear-gradient(145deg, rgba(18, 35, 58, 0.96), rgba(14, 27, 47, 0.94));
+      border: 1px solid rgba(101, 214, 255, 0.18);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .hero-card {
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card:after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -60px;
+      top: -80px;
+      background: radial-gradient(circle, rgba(101, 214, 255, 0.24), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid rgba(139, 255, 207, 0.3);
+      border-radius: 999px;
+      color: var(--accent-2);
+      background: rgba(139, 255, 207, 0.08);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 20px 0 16px;
+      font-size: clamp(38px, 6vw, 76px);
+      line-height: 0.96;
+      letter-spacing: -0.055em;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+      max-width: 780px;
+      margin: 0;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 14px;
+      padding: 12px 16px;
+      border: 1px solid rgba(101, 214, 255, 0.24);
+      background: rgba(101, 214, 255, 0.1);
+      color: var(--text);
+      font-weight: 700;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .button:hover,
+    .nav-item:hover,
+    .tech-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(101, 214, 255, 0.6);
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06101c;
+      border: 0;
+    }
+
+    .stats {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .stat {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 30px;
+      letter-spacing: -0.04em;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(16px);
+      background: rgba(8, 17, 31, 0.82);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .toolbar-inner {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 14px 0;
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .search {
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(7, 16, 29, 0.92);
+      color: var(--text);
+      padding: 14px 16px 14px 46px;
+      font: inherit;
+      outline: none;
+    }
+
+    .search svg {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
+    }
+
+    .chip.active {
+      color: #07101d;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .chip[data-filter="native"].active {
+      background: var(--native);
+      border-color: var(--native);
+    }
+
+    .chip[data-filter="web"].active {
+      background: var(--web);
+      border-color: var(--web);
+    }
+
+    .chip[data-filter="mobile"].active {
+      background: var(--mobile);
+      border-color: var(--mobile);
+    }
+
+    .chip[data-filter="desktop"].active {
+      background: var(--desktop);
+      border-color: var(--desktop);
+    }
+
+    .app-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      padding-top: 24px;
+    }
+
+    .app-tile {
+      border-radius: 20px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(18, 35, 58, 0.68);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-tile:before,
+    .tech-card:before,
+    .details:before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 5px;
+      background: var(--category-color, var(--accent));
+    }
+
+    .app-tile h2 {
+      font-size: 18px;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .app-tile p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .category-native {
+      --category-color: var(--native);
+    }
+
+    .category-web {
+      --category-color: var(--web);
+    }
+
+    .category-mobile {
+      --category-color: var(--mobile);
+    }
+
+    .category-desktop {
+      --category-color: var(--desktop);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 24px;
+      padding: 26px 0 54px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 88px;
+      align-self: start;
+      padding: 14px;
+      max-height: calc(100vh - 110px);
+      overflow: auto;
+    }
+
+    .nav-item {
+      width: 100%;
+      border: 1px solid transparent;
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      border-radius: 16px;
+      padding: 12px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .nav-item.active {
+      color: var(--text);
+      background: rgba(101, 214, 255, 0.1);
+      border-color: rgba(101, 214, 255, 0.28);
+    }
+
+    .nav-item.category-native.active {
+      border-color: color-mix(in srgb, var(--native) 55%, transparent);
+      background: rgba(101, 214, 255, 0.1);
+    }
+
+    .nav-item.category-web.active {
+      border-color: color-mix(in srgb, var(--web) 55%, transparent);
+      background: rgba(199, 146, 234, 0.1);
+    }
+
+    .nav-item.category-mobile.active {
+      border-color: color-mix(in srgb, var(--mobile) 55%, transparent);
+      background: rgba(139, 255, 207, 0.1);
+    }
+
+    .nav-item.category-desktop.active {
+      border-color: color-mix(in srgb, var(--desktop) 55%, transparent);
+      background: rgba(255, 209, 102, 0.1);
+    }
+
+    .icon {
+      width: 36px;
+      height: 36px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(101, 214, 255, 0.11);
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .category-native .icon {
+      color: var(--native);
+      background: rgba(101, 214, 255, 0.12);
+    }
+
+    .category-web .icon {
+      color: var(--web);
+      background: rgba(199, 146, 234, 0.12);
+    }
+
+    .category-mobile .icon {
+      color: var(--mobile);
+      background: rgba(139, 255, 207, 0.12);
+    }
+
+    .category-desktop .icon {
+      color: var(--desktop);
+      background: rgba(255, 209, 102, 0.12);
+    }
+
+    .nav-title {
+      font-weight: 800;
+      color: inherit;
+    }
+
+    .nav-meta {
+      font-size: 12px;
+      margin-top: 2px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .tech-card {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(18, 35, 58, 0.76);
+      border-radius: 20px;
+      padding: 18px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .tech-card header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .tech-card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .badge {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .category-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid color-mix(in srgb, var(--category-color) 42%, transparent);
+      color: var(--category-color);
+      background: color-mix(in srgb, var(--category-color) 10%, transparent);
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .details {
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .details-header {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+
+    .details-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: -0.045em;
+    }
+
+    .details p,
+    .tech-card p {
+      color: var(--muted);
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .section {
+      margin-top: 24px;
+    }
+
+    .section h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .steps,
+    .checks,
+    .coverage {
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .steps li,
+    .checks li,
+    .coverage li {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.035);
+      padding: 12px 14px;
+      border-radius: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .code-block {
+      border: 1px solid rgba(101, 214, 255, 0.18);
+      border-radius: 18px;
+      background: var(--code);
+      overflow: hidden;
+    }
+
+    .code-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .copy-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid color-mix(in srgb, var(--category-color, var(--accent)) 42%, transparent);
+      color: var(--text);
+      background: color-mix(in srgb, var(--category-color, var(--accent)) 12%, transparent);
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .copy-button:hover {
+      border-color: var(--category-color, var(--accent));
+    }
+
+    pre {
+      margin: 0;
+      padding: 18px;
+      overflow: auto;
+      color: #d9f2ff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    code {
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .empty {
+      display: none;
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .footer {
+      color: var(--muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 30px 0 46px;
+      line-height: 1.7;
+    }
+
+    .footer a {
+      color: var(--accent);
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        top: auto;
+        max-height: none;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app-map {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .toolbar-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        justify-content: flex-start;
+      }
+
+      .hero-card,
+      .details {
+        padding: 22px;
+      }
+
+      .details-header {
+        flex-direction: column;
+      }
+
+      .app-map {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell hero">
+    <section class="hero-card">
+      <div class="eyebrow">
+        <span aria-hidden="true">CPG</span>
+        <span>Joern Hunting Guide</span>
+      </div>
+      <h1>Vulnerability techniques, organized for review.</h1>
+      <p>
+        Browse practical Joern CPGQL patterns for native code, web code, mobile wrappers,
+        Cordova, Flutter native layers, and Electron applications. Start broad, confirm
+        flows, and reduce false positives with context.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="#techniques">Explore techniques</a>
+        <a class="button" href="README.md">Open README</a>
+        <a class="button" href="https://docs.joern.io/" target="_blank" rel="noreferrer">Joern docs</a>
+      </div>
+    </section>
+
+    <aside class="panel stats" aria-label="Cheatsheet summary">
+      <div class="stat">
+        <strong>11</strong>
+        <span>Technique groups</span>
+      </div>
+      <div class="stat">
+        <strong>4</strong>
+        <span>Main review areas: source, sink, flow, context</span>
+      </div>
+      <div class="stat">
+        <strong>Static</strong>
+        <span>Single HTML file ready for GitHub Pages</span>
+      </div>
+    </aside>
+  </header>
+
+  <div class="toolbar" id="techniques">
+    <div class="toolbar-inner">
+      <label class="search" aria-label="Search techniques">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10.5 18a7.5 7.5 0 1 1 5.3-12.8A7.5 7.5 0 0 1 10.5 18Zm5.7-1.8 4.3 4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="search" type="search" placeholder="Search: mobile, WebView, IPC, SQL, memory, TLS...">
+      </label>
+      <nav class="filters" aria-label="Technique filters">
+        <button class="chip active" data-filter="all">All</button>
+        <button class="chip" data-filter="native">Native</button>
+        <button class="chip" data-filter="web">Web</button>
+        <button class="chip" data-filter="mobile">Mobile</button>
+        <button class="chip" data-filter="desktop">Desktop</button>
+      </nav>
+    </div>
+  </div>
+
+  <section class="shell app-map" aria-label="Application type map">
+    <article class="app-tile category-native">
+      <h2>Native code</h2>
+      <p>C/C++, Java, JVM bytecode and low-level bugs: memory corruption, UAF, integer issues, filesystem races.</p>
+    </article>
+    <article class="app-tile category-web">
+      <h2>Web services</h2>
+      <p>Java/JVM and web-facing flows: SQL injection, XSS, TLS mistakes, weak crypto and unsafe output.</p>
+    </article>
+    <article class="app-tile category-mobile">
+      <h2>Mobile apps</h2>
+      <p>Android, iOS, Cordova and Flutter native wrappers: WebView, bridge APIs, storage, manifests and plist review.</p>
+    </article>
+    <article class="app-tile category-desktop">
+      <h2>Electron apps</h2>
+      <p>Main, preload and renderer review: IPC, Node integration, filesystem access, command execution and updates.</p>
+    </article>
+  </section>
+
+  <main class="shell layout">
+    <aside class="panel sidebar">
+      <div id="navList"></div>
+    </aside>
+
+    <section>
+      <div class="grid" id="cardGrid"></div>
+      <article class="panel details" id="details"></article>
+      <div class="panel empty" id="emptyState">No techniques matched your search.</div>
+    </section>
+  </main>
+
+  <footer class="shell footer">
+    <p>
+      This page is a visual companion for the markdown guides in this repository.
+      Matches are triage leads, not confirmed vulnerabilities. Always review sanitization,
+      authorization, platform configuration, and runtime context before reporting.
+    </p>
+  </footer>
+
+  <template id="icon-template">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path class="icon-path" d="" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </template>
+
+  <script>
+    const icons = {
+      command: "M4 7h16M7 12h5m-5 5h10M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z",
+      memory: "M7 7h10v10H7zM4 9h3m-3 6h3m10-6h3m-3 6h3M9 4v3m6-3v3M9 17v3m6-3v3",
+      flow: "M4 12h6m4 0h6M10 12l-2-2m2 2-2 2m6-2 2-2m-2 2 2 2M12 4v4m0 8v4",
+      file: "M6 3h8l4 4v14H6zM14 3v5h5M9 13h6M9 17h6",
+      lock: "M7 11V8a5 5 0 0 1 10 0v3M6 11h12v10H6zM12 15v2",
+      web: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3 12h18M12 3c2 2.2 3 5.2 3 9s-1 6.8-3 9M12 3c-2 2.2-3 5.2-3 9s1 6.8 3 9",
+      mobile: "M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm3 17h2",
+      desktop: "M4 5h16v11H4zM9 21h6m-3-5v5",
+      integer: "M5 7h14M5 12h14M5 17h14M8 4v16m8-16v16",
+      shield: "M12 3 5 6v6c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9V6z",
+      copy: "M8 8h10v12H8zM6 16H4V4h10v2"
+    };
+
+    const techniques = [
+      {
+        id: "command-injection",
+        title: "Command Injection",
+        category: "native",
+        icon: "command",
+        doc: "docs/command-injection.md",
+        summary: "Find attacker-controlled data reaching command execution APIs such as system, popen, exec, and posix_spawn.",
+        tags: ["C/C++", "CLI", "RCE", "source-to-sink"],
+        steps: [
+          "Start by listing dangerous command execution calls.",
+          "Mark CLI, environment, network, and parser input as sources.",
+          "Use reachableByFlows to confirm whether input reaches command arguments."
+        ],
+        query: `def source = cpg.method.name("main").parameter.name("argv") ++
+  cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv|recvfrom)").argument
+
+def sink = cpg.call
+  .name("(?i)(system|popen|execl|execlp|execle|execv|execvp|execve|posix_spawn|posix_spawnp)")
+  .argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Is the command shell-based or direct execution?",
+          "Is there a strict allowlist before the sink?",
+          "Can PATH, environment variables, or working directory be controlled?"
+        ]
+      },
+      {
+        id: "memory-corruption",
+        title: "Buffer Overflow and Memory Corruption",
+        category: "native",
+        icon: "memory",
+        doc: "docs/buffer-overflow-memory-corruption.md",
+        summary: "Prioritize unsafe copies, format strings, dynamic sizes, and copy sizes that differ from allocation sizes.",
+        tags: ["C/C++", "heap", "stack", "format string"],
+        steps: [
+          "Find dangerous copy and formatting functions.",
+          "Trace user input to copy sinks.",
+          "Compare allocation sizes with copy sizes."
+        ],
+        query: `def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv)").argument
+def sink = cpg.call.name("(?i)(strcpy|strcat|sprintf|memcpy|memmove)").argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Is the destination size known and enforced?",
+          "Is null termination guaranteed?",
+          "Are length checks applied before the copy?"
+        ]
+      },
+      {
+        id: "use-after-free",
+        title: "Use After Free and Double Free",
+        category: "native",
+        icon: "memory",
+        doc: "docs/use-after-free.md",
+        summary: "Find freed values that are reused, returned, or freed again without clear reassignment.",
+        tags: ["C/C++", "UAF", "double free", "ownership"],
+        steps: [
+          "List free-like calls.",
+          "Track identifiers after the free call.",
+          "Review reassignment and aliasing manually."
+        ],
+        query: `cpg.call.name("(?i)(free|.*_free|kfree)").where(_.argument(1).isIdentifier).filter { f =>
+  val freed = f.argument(1).code
+  f.method.ast.isCall
+    .name("(?i)(free|.*_free|kfree)")
+    .filter(_ != f)
+    .argument(1)
+    .codeExact(freed)
+    .nonEmpty
+}.l`,
+        checks: [
+          "Is the pointer reassigned to NULL on every path?",
+          "Are there aliases to the same memory?",
+          "Can callers still reach the freed object?"
+        ]
+      },
+      {
+        id: "input-validation",
+        title: "Input Validation and Return Values",
+        category: "native",
+        icon: "flow",
+        doc: "docs/input-validation.md",
+        summary: "Find external input reaching sensitive sinks and critical return values that are not checked.",
+        tags: ["validation", "return values", "sources", "sinks"],
+        steps: [
+          "Define realistic external inputs for the target.",
+          "Trace them to sensitive sinks.",
+          "Use control-flow filters to prioritize unguarded flows."
+        ],
+        query: `implicit val noResolve: NoResolve.type = NoResolve
+
+cpg.call
+  .name("(?i)(read|recv|malloc|calloc|realloc|fopen|open)")
+  .returnValueNotChecked
+  .l`,
+        checks: [
+          "Is validation applied to the same value that reaches the sink?",
+          "Does the error path stop execution?",
+          "Are bounds checks tied to the destination buffer?"
+        ]
+      },
+      {
+        id: "memory-leaks",
+        title: "Memory Leaks",
+        category: "native",
+        icon: "memory",
+        doc: "docs/memory-leaks.md",
+        summary: "Find allocations that reach returns, error paths, or methods without obvious cleanup.",
+        tags: ["C/C++", "allocation", "cleanup"],
+        steps: [
+          "List allocation APIs.",
+          "Find methods with allocations and no free-like calls.",
+          "Review ownership transfer and error paths."
+        ],
+        query: `cpg.method
+  .where(_.ast.isCall.name("(?i)(malloc|calloc|realloc|strdup|strndup)"))
+  .whereNot(_.ast.isCall.name("(?i)(free|.*_free)"))
+  .map(m => (m.fullName, m.filename, m.lineNumber))
+  .l`,
+        checks: [
+          "Is memory ownership transferred to the caller?",
+          "Does cleanup happen through goto labels or helpers?",
+          "Can realloc lose the original pointer on failure?"
+        ]
+      },
+      {
+        id: "filesystem",
+        title: "Directory Traversal and Filesystem Races",
+        category: "native",
+        icon: "file",
+        doc: "docs/filesystem-path-traversal.md",
+        summary: "Trace external input into file paths and find repeated path operations that may create race conditions.",
+        tags: ["path traversal", "TOCTOU", "filesystem"],
+        steps: [
+          "Find file operations with non-constant paths.",
+          "Trace input or string builders into path sinks.",
+          "Review canonicalization and descriptor-based usage."
+        ],
+        query: `def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|read|recv|recvfrom)").argument
+def pathSink = cpg.call.name("(?i)(fopen|open|openat|stat|lstat|access|unlink|rename)").argument
+
+pathSink.reachableByFlows(source).p`,
+        checks: [
+          "Is the path canonicalized before use?",
+          "Is the base directory attacker-writable?",
+          "Are path checks repeated instead of using file descriptors?"
+        ]
+      },
+      {
+        id: "tls-network",
+        title: "TLS, Certificates, and Insecure Traffic",
+        category: "web",
+        icon: "lock",
+        doc: "docs/tls-network.md",
+        summary: "Find disabled certificate validation, permissive trust managers, HTTP URLs, and weak crypto choices.",
+        tags: ["TLS", "certificates", "crypto", "network"],
+        steps: [
+          "Search for TLS verification controls.",
+          "Find hardcoded HTTP URLs and weak algorithms.",
+          "Review whether insecure settings are debug-only or production reachable."
+        ],
+        query: `cpg.call
+  .name("(?i)SSL_set_verify")
+  .where(_.argument(2).code(".*SSL_VERIFY_NONE.*|0"))
+  .map(c => (c.method.name, c.lineNumber, c.code))
+  .l`,
+        checks: [
+          "Is verification disabled only in tests?",
+          "Is HTTP used for integrity-sensitive content?",
+          "Are weak algorithms used for security decisions?"
+        ]
+      },
+      {
+        id: "web-injection",
+        title: "SQL Injection and XSS",
+        category: "web",
+        icon: "web",
+        doc: "docs/web-injection.md",
+        summary: "Trace HTTP parameters into SQL execution or HTML output sinks.",
+        tags: ["SQLi", "XSS", "Java", "web"],
+        steps: [
+          "Define framework-specific request sources.",
+          "Trace data to SQL or output sinks.",
+          "Check if parameters are bound and output is encoded."
+        ],
+        query: `def source = cpg.call
+  .methodFullName(".*HttpServletRequest\\\\.(getParameter|getHeader|getQueryString).*")
+
+def sink = cpg.call
+  .name("(?i)(query|executeQuery|executeUpdate|execute|prepareStatement)")
+  .argument
+
+sink.reachableByFlows(source).p`,
+        checks: [
+          "Are SQL values bound or concatenated?",
+          "Is output encoding correct for the context?",
+          "Does the framework auto-escape this sink?"
+        ]
+      },
+      {
+        id: "integer",
+        title: "Integer Overflow and Truncation",
+        category: "native",
+        icon: "integer",
+        doc: "docs/integer-overflow.md",
+        summary: "Find size arithmetic, truncation, signed shifts, and allocation/copy mismatches.",
+        tags: ["integers", "size_t", "truncation", "allocation"],
+        steps: [
+          "Search for arithmetic inside allocation sizes.",
+          "Find strlen results assigned to smaller integer types.",
+          "Compare allocation and copy expressions."
+        ],
+        query: `cpg.call
+  .name("(?i)strlen")
+  .inAssignment
+  .target
+  .evalType("(g?)int")
+  .l`,
+        checks: [
+          "Can arithmetic wrap before allocation?",
+          "Does the destination type keep the full range?",
+          "Does the copy size match the allocated size?"
+        ]
+      },
+      {
+        id: "mobile",
+        title: "Mobile Applications",
+        category: "mobile",
+        icon: "mobile",
+        doc: "docs/mobile-applications.md",
+        summary: "Review Android, iOS, Cordova, and Flutter native layers with Joern where language support exists.",
+        tags: ["Android", "iOS", "Cordova", "Flutter"],
+        steps: [
+          "Use Joern for Java, Kotlin, Swift, JavaScript, JVM bytecode, and native C/C++.",
+          "Review XML, plist, manifests, entitlements, and Dart with other tooling.",
+          "Focus on WebView, bridge APIs, storage, logs, crypto, and platform config."
+        ],
+        query: `cpg.call
+  .name("(?i)(setJavaScriptEnabled|setAllowFileAccess|setAllowContentAccess|setAllowFileAccessFromFileURLs|setAllowUniversalAccessFromFileURLs)")
+  .where(_.argument.code("true"))
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`,
+        checks: [
+          "Are Android exported components protected?",
+          "Are iOS ATS exceptions limited?",
+          "Do Cordova or Flutter bridges expose sensitive native actions?"
+        ]
+      },
+      {
+        id: "electron",
+        title: "Electron Applications",
+        category: "desktop",
+        icon: "desktop",
+        doc: "docs/electron-applications.md",
+        summary: "Review Electron main, preload, and renderer code for unsafe web preferences, IPC, file access, and OS command execution.",
+        tags: ["Electron", "IPC", "preload", "Node.js"],
+        steps: [
+          "Start with BrowserWindow, preload, IPC handlers, and custom protocols.",
+          "Trace renderer-controlled IPC input into privileged main process APIs.",
+          "Review navigation, remote content, updates, and exposed preload APIs."
+        ],
+        query: `cpg.call
+  .code("(?i).*(ipcMain\\\\.handle|ipcMain\\\\.on|ipcRenderer\\\\.invoke|ipcRenderer\\\\.send).*")
+  .map(c => (c.method.fullName, c.lineNumber, c.code))
+  .l`,
+        checks: [
+          "Is contextIsolation enabled and nodeIntegration disabled?",
+          "Are IPC arguments validated and authorized?",
+          "Can renderer input reach fs, child_process, shell, or native modules?"
+        ]
+      }
+    ];
+
+    const state = {
+      filter: "all",
+      query: "",
+      selected: techniques[0].id
+    };
+
+    const navList = document.getElementById("navList");
+    const cardGrid = document.getElementById("cardGrid");
+    const details = document.getElementById("details");
+    const emptyState = document.getElementById("emptyState");
+    const searchInput = document.getElementById("search");
+    const filterButtons = Array.from(document.querySelectorAll(".chip"));
+
+    function iconSvg(name) {
+      const path = icons[name] || icons.shield;
+      return `<span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="${path}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    }
+
+    function inlineIcon(name) {
+      const path = icons[name] || icons.shield;
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="${path}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    }
+
+    function categoryLabel(category) {
+      const labels = {
+        native: "Native",
+        web: "Web",
+        mobile: "Mobile",
+        desktop: "Desktop"
+      };
+      return labels[category] || "General";
+    }
+
+    function matches(tech) {
+      const inFilter = state.filter === "all" || tech.category === state.filter;
+      const haystack = `${tech.title} ${tech.summary} ${tech.tags.join(" ")} ${tech.steps.join(" ")} ${tech.checks.join(" ")}`.toLowerCase();
+      return inFilter && haystack.includes(state.query.toLowerCase());
+    }
+
+    function filteredTechniques() {
+      return techniques.filter(matches);
+    }
+
+    function selectTechnique(id) {
+      state.selected = id;
+      render();
+      document.getElementById("details").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderNav(items) {
+      navList.innerHTML = techniques.map(tech => `
+        <button class="nav-item category-${tech.category} ${tech.id === state.selected ? "active" : ""}" data-id="${tech.id}">
+          ${iconSvg(tech.icon)}
+          <span>
+            <span class="nav-title">${tech.title}</span>
+            <span class="nav-meta">${tech.category} / ${tech.tags.slice(0, 2).join(", ")}</span>
+          </span>
+        </button>
+      `).join("");
+
+      navList.querySelectorAll(".nav-item").forEach(button => {
+        button.addEventListener("click", () => selectTechnique(button.dataset.id));
+      });
+    }
+
+    function renderCards(items) {
+      cardGrid.innerHTML = items.map(tech => `
+        <article class="tech-card category-${tech.category}" data-id="${tech.id}">
+          <header>
+            ${iconSvg(tech.icon)}
+            <div>
+              <h3>${tech.title}</h3>
+              <span class="category-pill">${categoryLabel(tech.category)}</span>
+            </div>
+          </header>
+          <p>${tech.summary}</p>
+          <div class="badge-row">
+            ${tech.tags.map(tag => `<span class="badge">${tag}</span>`).join("")}
+          </div>
+        </article>
+      `).join("");
+
+      cardGrid.querySelectorAll(".tech-card").forEach(card => {
+        card.addEventListener("click", () => selectTechnique(card.dataset.id));
+      });
+    }
+
+    function renderDetails(tech) {
+      details.className = `panel details category-${tech.category}`;
+      details.innerHTML = `
+        <header class="details-header">
+          <div>
+            <div class="details-title">
+              ${iconSvg(tech.icon)}
+              <div>
+                <h2>${tech.title}</h2>
+                <span class="category-pill">${categoryLabel(tech.category)} app review</span>
+              </div>
+            </div>
+            <p style="margin-top: 14px;">${tech.summary}</p>
+          </div>
+          <a class="button" href="${tech.doc}">Open markdown guide</a>
+        </header>
+
+        <section class="section">
+          <h3>${iconSvg("flow")}Hunting Flow</h3>
+          <ol class="steps">
+            ${tech.steps.map(step => `<li>${step}</li>`).join("")}
+          </ol>
+        </section>
+
+        <section class="section">
+          <h3>${iconSvg("command")}Starter Query</h3>
+          <div class="code-block">
+            <div class="code-toolbar">
+              <span>CPGQL starter query</span>
+              <button class="copy-button" id="copyQueryButton" type="button">
+                ${inlineIcon("copy")}
+                <span>Copy query</span>
+              </button>
+            </div>
+            <pre><code>${escapeHtml(tech.query)}</code></pre>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3>${iconSvg("shield")}Manual Review Checklist</h3>
+          <ul class="checks">
+            ${tech.checks.map(check => `<li>${check}</li>`).join("")}
+          </ul>
+        </section>
+      `;
+      bindCopyButton(tech.query);
+    }
+
+    function bindCopyButton(query) {
+      const button = document.getElementById("copyQueryButton");
+      if (!button) return;
+
+      button.addEventListener("click", async () => {
+        const original = button.innerHTML;
+        try {
+          await copyText(query);
+          button.innerHTML = `${inlineIcon("shield")}<span>Copied</span>`;
+        } catch (error) {
+          button.innerHTML = `${inlineIcon("copy")}<span>Select text</span>`;
+        }
+        window.setTimeout(() => {
+          button.innerHTML = original;
+        }, 1400);
+      });
+    }
+
+    async function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = value;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (!success) {
+        throw new Error("copy failed");
+      }
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function render() {
+      const items = filteredTechniques();
+      if (!items.some(item => item.id === state.selected) && items.length > 0) {
+        state.selected = items[0].id;
+      }
+
+      renderNav(items);
+      renderCards(items);
+
+      const selected = techniques.find(tech => tech.id === state.selected);
+      if (items.length === 0) {
+        details.style.display = "none";
+        emptyState.style.display = "block";
+      } else {
+        details.style.display = "block";
+        emptyState.style.display = "none";
+        renderDetails(selected);
+      }
+    }
+
+    searchInput.addEventListener("input", event => {
+      state.query = event.target.value.trim();
+      render();
+    });
+
+    filterButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        state.filter = button.dataset.filter;
+        filterButtons.forEach(item => item.classList.toggle("active", item === button));
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
