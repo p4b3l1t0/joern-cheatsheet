@@ -1,30 +1,30 @@
-# Joern Cheatsheet para Hunting de Vulnerabilidades
+# Joern Vulnerability Hunting Cheatsheet
 
-Coleccion de queries de Joern orientadas a bug hunting y auditoria de codigo. El objetivo es partir de patrones simples, convertirlos en fuentes/sinks claros y despues refinar resultados con data-flow, control-flow y filtros por contexto.
+This repository collects Joern queries for bug hunting and source code review. The goal is to start with simple patterns, define clear sources and sinks, and then reduce false positives with data-flow, control-flow, and context filters.
 
-Joern representa el codigo como un Code Property Graph (CPG). Para hunting, el flujo habitual es:
+Joern represents code as a Code Property Graph (CPG). A practical hunting workflow is:
 
-1. Encontrar llamadas peligrosas o patrones sospechosos.
-2. Definir fuentes controlables por atacante y sinks sensibles.
-3. Usar `reachableBy` para confirmar conectividad de datos.
-4. Usar `reachableByFlows(...).p` para imprimir el path y validar manualmente.
-5. Reducir falsos positivos con filtros como `where`, `whereNot`, `controlledBy`, `notControlledBy`, `argumentIndex`, `method`, `callIn`, `caller` y `callee`.
+1. Find dangerous calls or suspicious patterns.
+2. Define attacker-controlled sources and sensitive sinks.
+3. Use `reachableBy` to check if data can flow from a source to a sink.
+4. Use `reachableByFlows(...).p` to print the full path and review it manually.
+5. Reduce noise with filters such as `where`, `whereNot`, `controlledBy`, `notControlledBy`, `argumentIndex`, `method`, `callIn`, `caller`, and `callee`.
 
-## Guias por Vulnerabilidad
+## Vulnerability Guides
 
 - [Command Injection](docs/command-injection.md)
-- [Buffer Overflow y Memory Corruption](docs/buffer-overflow-memory-corruption.md)
-- [Use After Free y Double Free](docs/use-after-free.md)
-- [Input Validation y Return Values](docs/input-validation.md)
+- [Buffer Overflow and Memory Corruption](docs/buffer-overflow-memory-corruption.md)
+- [Use After Free and Double Free](docs/use-after-free.md)
+- [Input Validation and Return Values](docs/input-validation.md)
 - [Memory Leaks](docs/memory-leaks.md)
-- [Directory Traversal, Filesystem y Race Conditions](docs/filesystem-path-traversal.md)
-- [TLS, Certificados y Trafico Inseguro](docs/tls-network.md)
-- [SQL Injection y XSS](docs/web-injection.md)
-- [Enteros, Truncation y Allocation Bugs](docs/integer-overflow.md)
+- [Directory Traversal, Filesystem, and Race Conditions](docs/filesystem-path-traversal.md)
+- [TLS, Certificates, and Insecure Network Traffic](docs/tls-network.md)
+- [SQL Injection and XSS](docs/web-injection.md)
+- [Integer Overflow, Truncation, and Allocation Bugs](docs/integer-overflow.md)
 
-## Snippets Base
+## Base Snippets
 
-### Fuentes frecuentes
+### Common Sources
 
 ```scala
 def cliArgs = cpg.method.name("main").parameter.name("argv")
@@ -37,7 +37,7 @@ def javaHttpInput = cpg.call
   .methodFullName(".*HttpServletRequest\\.(getParameter|getHeader|getCookies|getQueryString).*")
 ```
 
-### Sinks y data-flow
+### Sinks and Data-flow
 
 ```scala
 def source = cliArgs ++ cInputs
@@ -47,7 +47,7 @@ sink.reachableBy(source).l
 sink.reachableByFlows(source).p
 ```
 
-### Inspeccion rapida
+### Quick Inspection
 
 ```scala
 cpg.call.name("(?i)(strcpy|strcat|sprintf|gets|scanf)").code.l
@@ -63,15 +63,15 @@ cpg.call.name(".*")
   .l
 ```
 
-## Notas de Uso
+## Usage Notes
 
-- `reachableBy` devuelve fuentes que alcanzan un sink; `reachableByFlows` imprime los caminos y suele ser mejor para explicar hallazgos.
-- `callIn` es util cuando se parte desde una definicion de metodo y se quieren listar sus call-sites.
-- `whereNot(_.argument(...).isLiteral)` ayuda a priorizar datos dinamicos frente a constantes.
-- Para evitar ruido, filtra por archivo, metodo o superficie de ataque cuando puedas: endpoints, parsers, handlers, comandos CLI, entrada de red o codigo expuesto.
-- Las queries son heuristicas. Un match no es una vulnerabilidad confirmada hasta revisar sanitizacion, bounds checks, ownership de memoria y contexto de ejecucion.
+- `reachableBy` returns the sources that can reach a sink. `reachableByFlows` prints the paths and is usually better for explaining a finding.
+- `callIn` is useful when you start from a method definition and want to list its call sites.
+- `whereNot(_.argument(...).isLiteral)` helps prioritize dynamic data over hardcoded constants.
+- To reduce noise, filter by file, method, or attack surface when possible: endpoints, parsers, handlers, CLI commands, network input, or exposed code.
+- These queries are heuristics. A match is not a confirmed vulnerability until you review sanitization, bounds checks, memory ownership, and runtime context.
 
-## Referencias
+## References
 
 - [Joern Documentation](https://docs.joern.io/)
 - [Data-Flow Steps](https://docs.joern.io/cpgql/data-flow-steps/)

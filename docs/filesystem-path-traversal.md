@@ -1,8 +1,8 @@
-# Directory Traversal, Filesystem y Race Conditions
+# Directory Traversal, Filesystem, and Race Conditions
 
-Busca paths construidos con entrada externa, operaciones repetidas sobre el mismo path y uso de APIs donde un atacante podria cambiar el archivo entre checks y uso.
+Look for paths built from external input, repeated operations on the same path, and APIs where an attacker may change the target file between a check and a use.
 
-## File operations no constantes
+## Non-constant File Operations
 
 ```scala
 cpg.call
@@ -12,7 +12,7 @@ cpg.call
   .l
 ```
 
-## Path traversal desde entrada externa
+## Path Traversal From External Input
 
 ```scala
 def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|read|recv|recvfrom)").argument
@@ -21,7 +21,7 @@ def pathSink = cpg.call.name("(?i)(fopen|open|openat|stat|lstat|access|unlink|re
 pathSink.reachableByFlows(source).p
 ```
 
-## Paths construidos por concatenacion
+## Paths Built by Concatenation
 
 ```scala
 def builders = cpg.call.name("(?i)(strcat|strncat|sprintf|snprintf|asprintf)")
@@ -30,7 +30,7 @@ def pathSink = cpg.call.name("(?i)(fopen|open|openat|stat|lstat|access|unlink|re
 pathSink.reachableByFlows(builders).p
 ```
 
-## Filtro para `../` literal o separadores sospechosos
+## Filter for Literal `../` or Suspicious Separators
 
 ```scala
 cpg.call
@@ -40,9 +40,9 @@ cpg.call
   .l
 ```
 
-## Race condition por operaciones sobre el mismo path
+## Race Condition From Operations on the Same Path
 
-Adaptado de `file-operation-race` de Joern Query Database.
+Adapted from `file-operation-race` in the Joern Query Database.
 
 ```scala
 val operations: Map[String, Seq[Int]] = Map(
@@ -72,9 +72,9 @@ fileCalls(cpg.call).filter { call =>
 }.l
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si el path se canonicaliza antes del uso.
-- Si hay allowlist de directorios o nombres.
-- Si se usan file descriptors en lugar de repetir operaciones por path.
-- Si el directorio base es controlable o writable por atacante.
+- Whether the path is canonicalized before use.
+- Whether there is an allowlist for directories or file names.
+- Whether the code uses file descriptors instead of repeating path-based operations.
+- Whether the base directory is attacker-controlled or attacker-writable.

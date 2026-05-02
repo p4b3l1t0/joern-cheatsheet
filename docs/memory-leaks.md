@@ -1,6 +1,6 @@
 # Memory Leaks
 
-Joern no reemplaza un analisis completo de ownership, pero permite encontrar allocations sospechosas, paths sin liberacion y funciones grandes donde el cleanup es dificil de revisar.
+Joern does not replace a full ownership analysis, but it can help find suspicious allocations, paths without cleanup, and large functions where cleanup is hard to review.
 
 ## Allocations
 
@@ -11,7 +11,7 @@ cpg.call
   .l
 ```
 
-## Allocation que alcanza return
+## Allocation That Reaches a Return
 
 ```scala
 def allocations = cpg.call.name("(?i)(malloc|calloc|realloc|strdup|strndup)").l
@@ -21,7 +21,7 @@ cpg.method.methodReturn
   .p
 ```
 
-## Allocation en metodo sin `free`
+## Allocation in a Method Without `free`
 
 ```scala
 cpg.method
@@ -31,7 +31,7 @@ cpg.method
   .l
 ```
 
-## Allocation asignada a local que no se libera en el mismo metodo
+## Allocation Assigned to a Local Variable and Not Freed in the Same Method
 
 ```scala
 cpg.call
@@ -49,7 +49,7 @@ cpg.call
   .l
 ```
 
-## Metodos grandes para revisar cleanup
+## Large Methods to Review Cleanup
 
 ```scala
 cpg.method
@@ -58,9 +58,9 @@ cpg.method
   .l
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si la memoria se transfiere al caller o a una estructura owner.
-- Si hay cleanup en labels `goto`, `defer`, destructores o helpers externos.
-- Si `realloc` pierde el puntero original en fallo.
-- Si existen paths de error que retornan antes del cleanup.
+- Whether memory ownership is transferred to the caller or to an owning structure.
+- Whether cleanup happens in `goto` labels, `defer`, destructors, or external helpers.
+- Whether `realloc` can lose the original pointer on failure.
+- Whether error paths return before cleanup.

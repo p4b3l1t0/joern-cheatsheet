@@ -1,8 +1,8 @@
 # Command Injection
 
-Busca datos controlables por atacante llegando a funciones que ejecutan comandos. Empieza con llamadas directas y luego confirma flujo de datos hacia argumentos sensibles.
+Look for attacker-controlled data reaching functions that execute commands. Start with direct dangerous calls, then confirm whether user input flows into sensitive arguments.
 
-## Llamadas peligrosas
+## Dangerous Calls
 
 ```scala
 cpg.call
@@ -11,7 +11,7 @@ cpg.call
   .l
 ```
 
-## Flujo desde entrada a ejecucion
+## Flow From Input to Execution
 
 ```scala
 def source = cpg.method.name("main").parameter.name("argv") ++
@@ -24,9 +24,9 @@ def sink = cpg.call
 sink.reachableByFlows(source).p
 ```
 
-## Priorizacion
+## Prioritization
 
-### Comando no constante
+### Non-constant Command
 
 ```scala
 cpg.call
@@ -36,7 +36,7 @@ cpg.call
   .l
 ```
 
-### Construccion de comando con concatenacion/formato
+### Command Built With Concatenation or Formatting
 
 ```scala
 def builders = cpg.call.name("(?i)(strcat|strncat|sprintf|snprintf|asprintf)")
@@ -45,7 +45,7 @@ def execArgs = cpg.call.name("(?i)(system|popen|exec.*)").argument
 execArgs.reachableByFlows(builders).p
 ```
 
-### Exec con path dinamico
+### Exec With Dynamic Path
 
 ```scala
 cpg.call
@@ -54,7 +54,7 @@ cpg.call
   .l
 ```
 
-## Tags utiles
+## Useful Tags
 
 ```scala
 cpg.call
@@ -63,9 +63,9 @@ cpg.call
   .store
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si el argumento del comando incorpora datos externos.
-- Si hay allowlist estricta antes del sink.
-- Si el comando usa shell (`system`, `popen`) o ejecucion directa (`execve`).
-- Si variables de entorno, PATH o working directory pueden ser controladas.
+- Whether the command argument includes external input.
+- Whether there is a strict allowlist before the sink.
+- Whether the code uses a shell (`system`, `popen`) or direct execution (`execve`).
+- Whether environment variables, `PATH`, or the working directory can be controlled.

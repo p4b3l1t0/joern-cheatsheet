@@ -1,8 +1,8 @@
-# Buffer Overflow y Memory Corruption
+# Buffer Overflow and Memory Corruption
 
-Estas queries priorizan copias inseguras, formatos no constantes, buffers con tamanos dinamicos y operaciones de memoria donde el tamano copiado no coincide con el tamano reservado.
+These queries help find unsafe copies, non-constant format strings, dynamic buffer sizes, and memory operations where the copy size may not match the allocated size.
 
-## Funciones peligrosas
+## Dangerous Functions
 
 ```scala
 cpg.call
@@ -11,7 +11,7 @@ cpg.call
   .l
 ```
 
-## Copias con destino alcanzable desde allocation
+## Copies Where the Destination Comes From an Allocation
 
 ```scala
 def allocations = cpg.call.name("(?i)(malloc|calloc|realloc|alloca)").argument(1)
@@ -23,9 +23,9 @@ cpg.call
   .l
 ```
 
-## `malloc` con aritmetica y `memcpy` con tamano distinto
+## `malloc` With Arithmetic and `memcpy` With a Different Size
 
-Basado en el patron `malloc-memcpy-int-overflow` de Joern Query Database.
+Based on the `malloc-memcpy-int-overflow` pattern from the Joern Query Database.
 
 ```scala
 val allocations = cpg.call
@@ -43,7 +43,7 @@ cpg.call.name("(?i)memcpy").l.filter { memcpyCall =>
 }
 ```
 
-## Format string controlado
+## Controlled Format String
 
 ```scala
 val printfFns = cpg.call
@@ -57,7 +57,7 @@ val sprintfFns = cpg.call
 (printfFns ++ sprintfFns).l
 ```
 
-## `strncpy` sin null termination cercana
+## `strncpy` Without Nearby Null Termination
 
 ```scala
 val allocationSizes = cpg.call.name("(?i).*malloc$").argument(1).l
@@ -75,7 +75,7 @@ cpg.call.name("(?i)strncpy").map { c =>
 }.map(_._2).l
 ```
 
-## Input directo a copy sinks
+## Direct Input to Copy Sinks
 
 ```scala
 def source = cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv)").argument
@@ -84,9 +84,9 @@ def sink = cpg.call.name("(?i)(strcpy|strcat|sprintf|memcpy|memmove)").argument
 sink.reachableByFlows(source).p
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si el tamano copiado esta ligado al tamano real del destino.
-- Si hay terminacion nula garantizada.
-- Si hay checks de longitud antes de la copia.
-- Si el destino vive en stack, heap o estructura compartida.
+- Whether the copied size is tied to the real destination size.
+- Whether null termination is guaranteed.
+- Whether length checks happen before the copy.
+- Whether the destination lives on the stack, heap, or inside a shared structure.

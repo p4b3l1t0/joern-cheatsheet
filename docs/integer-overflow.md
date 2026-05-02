@@ -1,8 +1,8 @@
-# Enteros, Truncation y Allocation Bugs
+# Integer Overflow, Truncation, and Allocation Bugs
 
-Los bugs de enteros suelen aparecer cuando un tamano se calcula con aritmetica, se trunca a un tipo mas pequeno o se usa para reservar/copiar memoria con formulas distintas.
+Integer bugs often appear when a size is calculated with arithmetic, truncated to a smaller type, or used with different formulas for allocation and copying.
 
-## Allocation con aritmetica
+## Allocation With Arithmetic
 
 ```scala
 cpg.call
@@ -12,7 +12,7 @@ cpg.call
   .l
 ```
 
-## Multiplicacion en allocation
+## Multiplication in Allocation
 
 ```scala
 cpg.call
@@ -21,7 +21,7 @@ cpg.call
   .l
 ```
 
-## `malloc` calculado y copy size distinto
+## Calculated `malloc` and Different Copy Size
 
 ```scala
 val allocations = cpg.call
@@ -39,9 +39,9 @@ cpg.call.name("(?i)(memcpy|memmove)").l.filter { copyCall =>
 }
 ```
 
-## `strlen` truncado a `int`
+## `strlen` Truncated to `int`
 
-Basado en `strlen-truncation` de Joern Query Database.
+Based on `strlen-truncation` from the Joern Query Database.
 
 ```scala
 cpg.call
@@ -52,7 +52,7 @@ cpg.call
   .l
 ```
 
-## Shift de signed integer
+## Signed Integer Shift
 
 ```scala
 cpg.call
@@ -62,7 +62,7 @@ cpg.call
   .l
 ```
 
-## Comparaciones despues de cast
+## Comparisons After Cast
 
 ```scala
 cpg.call
@@ -72,9 +72,9 @@ cpg.call
   .l
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si la aritmetica puede wrappear antes de reservar.
-- Si `calloc(n, size)` valida overflow de `n * size` en la plataforma objetivo.
-- Si el tipo destino conserva todo el rango (`size_t` vs `int`).
-- Si el copy size usa la misma expresion que la allocation.
+- Whether arithmetic can wrap before allocation.
+- Whether `calloc(n, size)` checks overflow for `n * size` on the target platform.
+- Whether the destination type keeps the full range (`size_t` vs `int`).
+- Whether the copy size uses the same expression as the allocation.

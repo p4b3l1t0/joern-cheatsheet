@@ -1,15 +1,15 @@
-# Input Validation y Return Values
+# Input Validation and Return Values
 
-Estas queries ayudan a encontrar entrada externa usada sin validacion suficiente y retornos de funciones criticas que no se comprueban.
+These queries help find external input used without enough validation and critical function return values that are not checked.
 
-## Fuentes comunes en C/C++
+## Common Sources in C/C++
 
 ```scala
 def source = cpg.method.name("main").parameter.name("argv") ++
   cpg.call.name("(?i)(getenv|gets|fgets|scanf|sscanf|read|recv|recvfrom)").argument
 ```
 
-## Entrada que llega a sinks sensibles
+## Input Reaching Sensitive Sinks
 
 ```scala
 def source = cpg.method.name("main").parameter.name("argv") ++
@@ -22,9 +22,9 @@ def sink = cpg.call
 sink.reachableByFlows(source).p
 ```
 
-## Flujo no protegido por condicion
+## Flow Not Protected by a Condition
 
-`notControlledBy` es util para priorizar flows que no parecen estar bajo un check cercano. Ajusta el operador segun el caso.
+`notControlledBy` is useful for prioritizing flows that do not appear to be guarded by a nearby check. Adjust the operator pattern for your target.
 
 ```scala
 def source = cpg.call.name("(?i)(read|recv|fgets|scanf)").argument
@@ -36,9 +36,9 @@ sink
   .p
 ```
 
-## Return values no chequeados
+## Unchecked Return Values
 
-Basado en `unchecked-read-recv-malloc` de Joern Query Database.
+Based on `unchecked-read-recv-malloc` from the Joern Query Database.
 
 ```scala
 implicit val noResolve: NoResolve.type = NoResolve
@@ -49,7 +49,7 @@ cpg.call
   .l
 ```
 
-## Metodos que reciben parametros y llaman sinks
+## Methods That Take Parameters and Call Sinks
 
 ```scala
 cpg.method
@@ -59,7 +59,7 @@ cpg.method
   .l
 ```
 
-## Tag para superficie de ataque
+## Tag Attack Surface Methods
 
 ```scala
 cpg.method
@@ -68,9 +68,9 @@ cpg.method
   .store
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si hay allowlist, normalizacion o bounds check antes del sink.
-- Si la validacion se aplica al mismo valor que llega al sink.
-- Si el return value es usado indirectamente despues de una asignacion.
-- Si el error path limpia recursos o corta ejecucion.
+- Whether there is an allowlist, normalization, or bounds check before the sink.
+- Whether validation is applied to the same value that reaches the sink.
+- Whether a return value is used indirectly after an assignment.
+- Whether the error path cleans resources or stops execution.

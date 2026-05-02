@@ -1,8 +1,8 @@
-# SQL Injection y XSS
+# SQL Injection and XSS
 
-Estas queries estan pensadas para Java/JVM y frameworks web, pero la idea se puede adaptar a PHP, JavaScript, Python o Go cambiando fuentes y sinks.
+These queries are written with Java/JVM and web frameworks in mind, but the same idea can be adapted to PHP, JavaScript, Python, or Go by changing the sources and sinks.
 
-## SQL Injection: parametros HTTP a query
+## SQL Injection: HTTP Parameters to Query
 
 ```scala
 def source = cpg.call
@@ -15,7 +15,7 @@ def sink = cpg.call
 sink.reachableByFlows(source).p
 ```
 
-## Query SQL construida por concatenacion
+## SQL Query Built by Concatenation
 
 ```scala
 cpg.call
@@ -25,7 +25,7 @@ cpg.call
   .l
 ```
 
-## `Statement` en lugar de prepared statements
+## `Statement` Instead of Prepared Statements
 
 ```scala
 cpg.call
@@ -33,7 +33,7 @@ cpg.call
   .l
 ```
 
-## Prepared statement con SQL dinamico
+## Prepared Statement With Dynamic SQL
 
 ```scala
 def source = cpg.call
@@ -46,9 +46,9 @@ def sink = cpg.call
 sink.reachableByFlows(source).p
 ```
 
-## Reflected XSS en servlets
+## Reflected XSS in Servlets
 
-Basado en `xss-servlet` de Joern Query Database.
+Based on `xss-servlet` from the Joern Query Database.
 
 ```scala
 def source = cpg.call.methodFullNameExact(
@@ -66,7 +66,7 @@ def sinks = cpg.call
 sinks.where(_.argument(1).reachableBy(source)).l
 ```
 
-## Output HTML sin encoding aparente
+## HTML Output Without Obvious Encoding
 
 ```scala
 def source = cpg.call.methodFullName(".*HttpServletRequest\\.(getParameter|getHeader|getQueryString).*")
@@ -78,9 +78,9 @@ sink
   .p
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si el sink usa parametros bindados o concatenacion.
-- Si el encoding corresponde al contexto HTML, atributo, JS, URL o CSS.
-- Si sanitizacion y sink trabajan sobre el mismo dato.
-- Si el framework auto-escapa por defecto.
+- Whether the sink uses bound parameters or string concatenation.
+- Whether encoding matches the output context: HTML, attribute, JS, URL, or CSS.
+- Whether sanitization and the sink use the same value.
+- Whether the framework auto-escapes output by default.

@@ -1,8 +1,8 @@
-# TLS, Certificados y Trafico Inseguro
+# TLS, Certificates, and Insecure Network Traffic
 
-Estas queries cubren validacion de certificados deshabilitada o inefectiva, protocolos inseguros y APIs criptograficas debiles.
+These queries cover disabled or ineffective certificate validation, insecure protocols, and weak cryptographic APIs.
 
-## OpenSSL sin verificacion
+## OpenSSL Without Verification
 
 ```scala
 cpg.call
@@ -12,7 +12,7 @@ cpg.call
   .l
 ```
 
-## Callback de verificacion que siempre acepta
+## Verification Callback That Always Accepts
 
 ```scala
 cpg.method
@@ -24,9 +24,9 @@ cpg.method
   .l
 ```
 
-## Java `HostnameVerifier` / `TrustManager` permisivo
+## Permissive Java `HostnameVerifier` / `TrustManager`
 
-Patron inspirado en `ineffective-certificate-check` de Joern Query Database.
+Pattern inspired by `ineffective-certificate-check` from the Joern Query Database.
 
 ```scala
 val validators = Map(
@@ -42,7 +42,7 @@ cpg.method
   .l
 ```
 
-## Protocolo HTTP hardcodeado
+## Hardcoded HTTP Protocol
 
 ```scala
 cpg.call
@@ -60,7 +60,7 @@ cpg.call
   .l
 ```
 
-## Algoritmos debiles
+## Weak Algorithms
 
 ```scala
 cpg.call
@@ -69,9 +69,9 @@ cpg.call
   .l
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si la verificacion esta deshabilitada solo en tests o debug.
-- Si hay pinning o verificacion externa real.
-- Si HTTP se usa para recursos no sensibles o puede afectar integridad.
-- Si el algoritmo debil protege seguridad real o solo fingerprints no criptograficos.
+- Whether verification is disabled only in tests or debug builds.
+- Whether real pinning or external verification exists.
+- Whether HTTP is used for non-sensitive resources or can affect integrity.
+- Whether the weak algorithm protects real security data or only non-security fingerprints.

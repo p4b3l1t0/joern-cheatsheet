@@ -1,6 +1,6 @@
-# Use After Free y Double Free
+# Use After Free and Double Free
 
-El objetivo es localizar valores liberados que vuelven a usarse, retornarse o liberarse. Estas queries generan candidatos; revisa ownership y paths reales antes de reportar.
+The goal is to find values that are freed and later reused, returned, or freed again. These queries produce candidates; always review ownership and real execution paths before reporting.
 
 ## Calls a `free`
 
@@ -11,9 +11,9 @@ cpg.call
   .l
 ```
 
-## Reuso despues de `free`
+## Reuse After `free`
 
-Basado en el patron `free-follows-value-reuse` de Joern Query Database.
+Based on the `free-follows-value-reuse` pattern from the Joern Query Database.
 
 ```scala
 cpg.method
@@ -38,7 +38,7 @@ cpg.method
   .l
 ```
 
-## Double free simple por identificador
+## Simple Double Free by Identifier
 
 ```scala
 cpg.call.name("(?i)(free|.*_free|kfree)").where(_.argument(1).isIdentifier).filter { f =>
@@ -52,7 +52,7 @@ cpg.call.name("(?i)(free|.*_free|kfree)").where(_.argument(1).isIdentifier).filt
 }.l
 ```
 
-## Campo de estructura liberado sin reasignacion clara
+## Struct Field Freed Without Clear Reassignment
 
 ```scala
 val freeOfStructField = cpg.call
@@ -76,7 +76,7 @@ freeOfStructField.argument(1).filter { arg =>
 }.l
 ```
 
-## Valores retornados despues de liberar
+## Values Returned After Free
 
 ```scala
 def frees = cpg.call.name("(?i)(free|.*_free|kfree)").argument(1).isIdentifier
@@ -85,9 +85,9 @@ def returns = cpg.method.methodReturn
 returns.reachableByFlows(frees).p
 ```
 
-## Que validar manualmente
+## What to Check Manually
 
-- Si el puntero se reasigna a `NULL` en todos los paths.
-- Si el objeto queda accesible a callers o estructuras globales.
-- Si hay aliases del mismo puntero.
-- Si el segundo `free` ocurre solo bajo condiciones mutuamente excluyentes.
+- Whether the pointer is reassigned to `NULL` on every path.
+- Whether the object remains reachable by callers or global structures.
+- Whether there are aliases to the same pointer.
+- Whether the second `free` only happens under mutually exclusive conditions.
